@@ -1235,11 +1235,8 @@ class RepFactura {
                         doc.options.margins.left + 10,
                         yPos);
 
-                    let concepto = item.concepto + "- F.V: " + item.fecha;
-
-                    // data.lote.map((lote, index) => {
-                    //     concepto += "\n" + lote.lote + " - " + lote.manzana;
-                    // });
+                    // let concepto = item.concepto : item.concepto + "- F.V: " + item.fecha;
+                    let concepto = item.concepto.substring(6) == 'INICIAL' ? item.concepto : item.concepto.substring(0,5) == 'CUOTA' ? item.concepto + "- F.V: " + item.fecha : item.concepto;
 
                     doc.fontSize(h2).text(concepto,
                         doc.options.margins.left + 80,

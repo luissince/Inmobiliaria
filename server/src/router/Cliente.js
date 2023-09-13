@@ -108,6 +108,8 @@ router.get('/listcobrosasociados', async function (req, res) {
 router.get('/repcliente', async function (req, res) {
     const decryptedData = decrypt(req.query.params, 'key-report-inmobiliaria');
     req.query.idSede = decryptedData.idSede;
+    req.query.idProyecto = decryptedData.idProyecto;
+    req.query.nombreProyecto = decryptedData.nombreProyecto;
     req.query.fechaIni = decryptedData.fechaIni;
     req.query.fechaFin = decryptedData.fechaFin;
     req.query.idCliente = decryptedData.idCliente;
@@ -120,7 +122,7 @@ router.get('/repcliente', async function (req, res) {
         return;
     }
 
-    const detalle = await cliente.listapagos(req)
+    const detalle = await cliente.listaClientesTotal(req)
 
     if (Array.isArray(detalle)) {
         let data = await repCliente.repGeneral(req, sedeInfo, detalle);

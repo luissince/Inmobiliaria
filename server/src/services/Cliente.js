@@ -66,11 +66,11 @@ class Cliente {
                     value.idCliente,
                     value.idProyecto
                 ]);
- 
+
                 newLista.push({
                     ...value,
                     detalle
-                }); 
+                });
             }
 
             let resultLista = newLista.map(function (item, index) {
@@ -451,7 +451,8 @@ class Cliente {
             cm.nombre, 
             v.serie, 
             v.numeracion, 
-            (SELECT IFNULL(COUNT(*), 0) FROM plazo AS p WHERE p.estado = 0 AND p.idVenta = v.idVenta) AS numCuota, 
+            (SELECT IFNULL(COUNT(*), 0) FROM plazo AS p WHERE p.estado = 0 AND p.idVenta = v.idVenta) AS numCuota,
+            (SELECT IFNULL(p.monto,0) FROM plazo AS p WHERE p.idVenta = v.idVenta LIMIT 1) AS cuotaMensual,
             CASE 
             WHEN v.credito = 1 THEN DATE_ADD(v.fecha,interval v.frecuencia day)
             ELSE (SELECT IFNULL(MIN(p.fecha),'') FROM plazo AS p WHERE p.estado = 0 AND p.idVenta = v.idVenta) END AS fechaPago,
@@ -518,128 +519,128 @@ class Cliente {
         }
     }
 
-    async listapagos(req) {
+    async listaClientesTotal(req) {
         try {
 
-            const ventas = await conec.query(`SELECT 
-            v.idVenta,
-            co.nombre AS comprobante,
-            v.serie,
-            v.numeracion,
-            DATE_FORMAT(v.fecha,'%d/%m/%Y') as fecha, 
-            v.hora
-            FROM venta AS v
-            INNER JOIN comprobante AS co ON co.idComprobante  = v.idComprobante 
-            WHERE v.idCliente = ? AND v.estado <> 3`, [
-                req.query.idCliente,
-            ]);
-
-            let newVentas = [];
-
-            for (const venta of ventas) {
-                const detalle = await conec.query(`SELECT 
-                l.descripcion AS lote,
-                m.nombre AS manzana,
+            if (req.query.idCliente !== "") {
+                let lista = await conec.query(`SELECT c.idCliente, c.idTipoDocumento, 
+                td.nombre AS nameDocument,
+                c.documento,
+                c.informacion,
+                p.idProyecto,
+                p.nombre AS nameProject,
+                v.idVenta,                
+                vd.idLote,
+                l.descripcion as nameLote,
+                m.nombre nameManzana,
                 vd.precio,
-                vd.cantidad
-                FROM ventaDetalle AS vd
-                INNER JOIN lote AS l ON vd.idLote = l.idLote
-                INNER JOIN manzana AS m ON m.idManzana = l.idManzana
-                WHERE vd.idVenta = ?`, [
-                    venta.idVenta
+                (SELECT IFNULL(p.monto,0) FROM plazo AS p WHERE p.idVenta = v.idVenta LIMIT 1) AS cuotaMensual,
+                (SELECT IFNULL(COUNT(*), 0) FROM plazo AS p WHERE p.idVenta = v.idVenta) AS cuoTotal,
+                CASE WHEN v.frecuencia = 30 THEN 'FIN DE MES' ELSE 'CADA QUINCENA' END AS frecuenciaName
+                from cliente AS c
+                inner join venta as v on v.idCliente = c.idCliente
+                INNER join ventadetalle AS vd on vd.idVenta = v.idVenta 
+                inner join lote as l on l.idLote= vd.idLote
+                inner join manzana as m on m.idManzana = l.idManzana
+                INNER join proyecto as p on p.idProyecto = v.idProyecto
+                INNER JOIN tipodocumento as td on td.idTipoDocumento = c.idTipoDocumento
+                where v.idProyecto = ? AND c.idCliente = ?
+                ORDER BY v.idVenta ASC`, [
+                    req.query.idProyecto,
+                    req.query.idCliente,
                 ]);
 
-                // for(const detalle of detalles){
-                //     const cobros = await conec.query(`SELECT
-                //     IFNULL(co.idConcepto,'CV01') AS idConcepto,
-                //     IFNULL(co.nombre,'LOTE') AS concepto,
-                //     'INGRESO' AS tipo,
-                //     b.idBanco,
-                //     b.nombre,
-                //     CASE 
-                //     WHEN b.tipoCuenta = 1 THEN 'Banco'
-                //     WHEN b.tipoCuenta = 2 THEN 'Tarjeta'
-                //     ELSE 'Efectivo' END AS 'tipoCuenta',
-                //     IFNULL(SUM(cd.precio*cd.cantidad),SUM(cv.precio)) AS monto
-                //     FROM cobro as c
-                //     LEFT JOIN banco AS b ON c.idBanco = b.idBanco
-                //     LEFT JOIN cobroDetalle AS cd ON c.idCobro = cd.idCobro
-                //     LEFT JOIN concepto AS co ON co.idConcepto = cd.idConcepto
-                //     LEFT JOIN cobroVenta AS cv ON cv.idCobro = c.idCobro
-                //     LEFT JOIN notaCredito AS nc ON nc.idCobro = c.idCobro
-                //     WHERE 
-                //     c.idProcedencia = ? AND c.estado = 1 AND nc.idNotaCredito IS NULL
-                //     OR
-                //     c.idProcedencia = ? AND c.estado = 1 AND nc.idNotaCredito IS NULL
-                //     GROUP BY c.idCobro`,[
-                //         venta.idVenta,
-                //         detalle.idLote 
-                //     ]);
-                // }
+                let newLista = []
 
-                newVentas.push({
-                    ...venta,
-                    "detalle": detalle
-                });
+                for (let value of lista) {
+                    let detalle = await conec.query(`SELECT 
+                    cl.idCliente,
+                    c.idCobro, 
+                    co.nombre as comprobante,
+                    c.serie,
+                    c.numeracion,
+                    cl.documento,
+                    cl.informacion,  
+                    CASE 
+                    WHEN cn.idConcepto IS NOT NULL THEN cn.nombre
+                    ELSE 
+                        CASE 
+                            WHEN cv.idPlazo = 0 THEN 'CUOTA INICIAL' 
+                            WHEN pl.cuota IS NOT NULL THEN CONCAT('CUOTA',' ',pl.cuota) 
+                            ELSE '-'
+                        END 
+                    END AS detalle,    
+                    IFNULL(v.idVenta,'') AS idVentaRef,
+                    IFNULL(CONCAT(cp.nombre,' ',v.serie,'-',v.numeracion),'') AS comprobanteRef,
+                    IFNULL(CONCAT(lo.descripcion,' - ',ma.nombre),'') AS loteRef, 
+                    IFNULL(v.estado,0) AS estadoRef,
+                    m.simbolo,
+                    m.codiso,
+                    b.nombre as banco,  
+                    c.observacion, 
+                    DATE_FORMAT(c.fecha,'%d/%m/%Y') as fecha, 
+                    c.hora,
+                    c.estado,    
+                    nc.idNotaCredito,    
+                    IFNULL(SUM(cd.precio*cd.cantidad),SUM(cv.precio)) AS monto
+                    FROM cobro AS c
+                    INNER JOIN cliente AS cl ON c.idCliente = cl.idCliente
+                    INNER JOIN banco AS b ON c.idBanco = b.idBanco
+                    INNER JOIN moneda AS m ON c.idMoneda = m.idMoneda 
+                    INNER JOIN comprobante AS co ON co.idComprobante = c.idComprobante
+                    LEFT JOIN cobroDetalle AS cd ON c.idCobro = cd.idCobro
+                    LEFT JOIN concepto AS cn ON cd.idConcepto = cn.idConcepto 
+                    LEFT JOIN cobroVenta AS cv ON cv.idCobro = c.idCobro 
+                    LEFT JOIN plazo AS pl ON pl.idPlazo = cv.idPlazo    
+                    LEFT JOIN venta AS v ON c.idProcedencia = v.idVenta 
+                    LEFT JOIN comprobante AS cp ON v.idComprobante = cp.idComprobante
+                    LEFT JOIN ventaDetalle AS vd ON vd.idVenta = v.idVenta 
+                    LEFT JOIN lote AS lo ON lo.idLote = vd.idLote
+                    LEFT JOIN manzana AS ma ON ma.idManzana = lo.idManzana     
+                    LEFT JOIN notaCredito AS nc ON nc.idCobro = c.idCobro AND nc.estado = 1
+                    WHERE v.idVenta = ?    
+                    GROUP BY c.idCobro
+                    ORDER BY v.idVenta ASC`,[
+                        value.idVenta
+                    ]);
+
+                    newLista.push({
+                        ...value,
+                        "detail": detalle
+                    });
+                }
+
+                return newLista;
+            } else {
+                let lista = await conec.query(`SELECT c.idCliente, c.idTipoDocumento, 
+                td.nombre AS nameDocument,
+                c.documento,
+                c.informacion,
+                p.idProyecto,
+                p.nombre AS nameProject,
+                v.idVenta,                
+                vd.idLote,
+                l.descripcion as nameLote,
+                m.nombre nameManzana,
+                vd.precio,
+                (SELECT IFNULL(p.monto,0) FROM plazo AS p WHERE p.idVenta = v.idVenta LIMIT 1) AS cuotaMensual,
+                (SELECT IFNULL(COUNT(*), 0) FROM plazo AS p WHERE p.idVenta = v.idVenta) AS cuoTotal,
+                CASE WHEN v.frecuencia = 30 THEN 'FIN DE MES' ELSE 'CADA QUINCENA' END AS frecuenciaName
+                from cliente AS c
+                inner join venta as v on v.idCliente = c.idCliente
+                INNER join ventadetalle AS vd on vd.idVenta = v.idVenta 
+                inner join lote as l on l.idLote= vd.idLote
+                inner join manzana as m on m.idManzana = l.idManzana
+                INNER join proyecto as p on p.idProyecto = v.idProyecto
+                INNER JOIN tipodocumento as td on td.idTipoDocumento = c.idTipoDocumento
+                where v.idProyecto = ? AND c.fecha BETWEEN ? AND ?`, [
+                    req.query.idProyecto,
+                    req.query.fechaIni,
+                    req.query.fechaFin
+                ]);
+
+                return lista;
             }
-
-            // console.log(newVentas);
-
-            return newVentas;
-            // if (req.query.idCliente !== "") {
-            //     let lista = await conec.query(`SELECT 
-            //     c.idCobro, 
-            //     co.nombre as comprobante,
-            //     c.serie,
-            //     c.numeracion,
-            //     CASE 
-            //     WHEN cn.idConcepto IS NOT NULL THEN cn.nombre
-            //     ELSE CONCAT(cp.nombre,': ',v.serie,'-',v.numeracion) END AS detalle,
-            //     m.simbolo,
-            //     b.nombre as banco,  
-            //     c.observacion, 
-            //     DATE_FORMAT(c.fecha,'%d/%m/%Y') as fecha, 
-            //     c.hora,
-            //     IFNULL(SUM(cd.precio*cd.cantidad),SUM(cv.precio)) AS monto
-            //     FROM cobro AS c
-            //     INNER JOIN cliente AS cl ON c.idCliente = cl.idCliente
-            //     INNER JOIN banco AS b ON c.idBanco = b.idBanco
-            //     INNER JOIN moneda AS m ON c.idMoneda = m.idMoneda 
-            //     INNER JOIN comprobante AS co ON co.idComprobante = c.idComprobante
-            //     LEFT JOIN cobroDetalle AS cd ON c.idCobro = cd.idCobro
-            //     LEFT JOIN concepto AS cn ON cd.idConcepto = cn.idConcepto 
-            //     LEFT JOIN cobroVenta AS cv ON cv.idCobro = c.idCobro 
-            //     LEFT JOIN venta AS v ON cv.idVenta = v.idVenta 
-            //     LEFT JOIN comprobante AS cp ON v.idComprobante = cp.idComprobante
-            //     LEFT JOIN notaCredito AS nc ON nc.idCobro = c.idCobro
-            //     WHERE c.idCliente = ? AND c.estado = 1 AND nc.idNotaCredito IS NULL
-            //     AND (c.fecha BETWEEN ? AND ?)
-            //     GROUP BY c.idCobro
-            //     ORDER BY c.fecha DESC,c.hora DESC`, [
-            //         req.query.idCliente,
-            //         req.query.fechaIni,
-            //         req.query.fechaFin
-            //     ]);
-
-            //     return lista;
-            // } else {
-            //     let lista = await conec.query(`SELECT
-            //     c.idCliente,
-            //     c.documento,
-            //     c.informacion,
-            //     (SELECT IFNULL(SUM(cd.precio*cd.cantidad),0) FROM cobroDetalle AS cd WHERE cd.idCobro = co.idCobro) AS ingresos,
-            //     (SELECT IFNULL(SUM(cv.precio),0) FROM cobroVenta AS cv WHERE cv.idCobro = co.idCobro) AS ventas
-            //     FROM cobro AS co
-            //     INNER JOIN cliente AS c ON c.idCliente = co.idCliente
-            //     LEFT JOIN notaCredito AS nc ON nc.idCobro = co.idCobro
-            //     WHERE 
-            //     co.fecha BETWEEN ? AND ? AND co.estado = 1 AND nc.idNotaCredito IS NULL`, [
-            //         req.query.fechaIni,
-            //         req.query.fechaFin
-            //     ]);
-
-            //     return lista;
-            // }
         } catch (error) {
             console.error(error);
             return "Se produjo un error de servidor, intente nuevamente.";

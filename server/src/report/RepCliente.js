@@ -17,7 +17,7 @@ class RepCliente {
                 }
             });
 
-            doc.info["Title"] = "REPORTE DE APORTACIONES DE LOS CLIENTES.pdf"
+            doc.info["Title"] = "REPORTE DE CLIENTES.pdf"
 
             let orgX = doc.x;
             let orgY = doc.y;
@@ -29,11 +29,11 @@ class RepCliente {
             let h2 = 11;
             let h3 = 9;
 
-            if (isFile(path.join(__dirname, "..", "path/company/" + sedeInfo.rutaLogo))) {
-                doc.image(path.join(__dirname, "..", "path/company/" + sedeInfo.rutaLogo), orgX, orgY, { width: 75 });
-            } else {
-                doc.image(path.join(__dirname, "..", "path/to/noimage.jpg"), orgX, orgY, { width: 75 });
-            }
+            // if (isFile(path.join(__dirname, "..", "path/company/" + sedeInfo.rutaLogo))) {
+            //     doc.image(path.join(__dirname, "..", "path/company/" + sedeInfo.rutaLogo), orgX, orgY, { width: 75 });
+            // } else {
+            //     doc.image(path.join(__dirname, "..", "path/to/noimage.jpg"), orgX, orgY, { width: 75 });
+            // }
 
             doc.fontSize(h1).text(
                 `${sedeInfo.nombreEmpresa}`,
@@ -65,138 +65,178 @@ class RepCliente {
                 }
             );
 
-            doc.fontSize(h3).text(
-                `CLIENTE: ${req.query.idCliente === "" ? "TODOS" : req.query.cliente}`,
+            doc.fontSize(h2).text(
+                `PROYECTO: ${req.query.nombreProyecto}`,
                 orgX,
-                doc.y + 50,
+                doc.y + 10,
                 {
                     align: "left",
                 }
             );
 
-            doc.fontSize(h3).text(
-                `CLIENTE: ${req.query.idCliente === "" ? "TODOS" : req.query.cliente}`,
-                orgX,
-                doc.y + 50,
-                {
-                    align: "left",
+            if (req.query.idCliente !== "") {
+
+                if (data.length === 0) {
+                    doc.fontSize(h3).text(
+                        `${"No existe datos relacionados"}`,
+                        doc.options.margins.left,
+                        doc.y + 135,
+                        {
+                            width: widthContent,
+                            align: "center",
+                        }
+                    );
                 }
-            );
 
-            doc.fontSize(h3).text(
-                `CLIENTE: ${req.query.idCliente === "" ? "TODOS" : req.query.cliente}`,
-                orgX,
-                doc.y + 50,
-                {
-                    align: "left",
+                let i = 0
+                while (i < data.length) {
+
+                    doc.fontSize(h3).text(
+                        `${"VENTA N° "}` + (i + 1),
+                        doc.options.margins.left,
+                        doc.y + 15,
+                        {
+                            width: widthContent,
+                            align: "center",
+                        }
+                    );
+
+                    const table = {
+                        headers: ["N°", "Documento", "Cliente", "Manzana", "Lote", "Ctas.", "Cta. Mensual", "Cta. Total", "Tipo Cta."],
+                        rows: [
+                            [i + 1, data[i].nameDocument + "\n" + data[i].documento, data[i].informacion, data[i].nameManzana, data[i].nameLote, data[i].cuoTotal, numberFormat(data[i].cuotaMensual), numberFormat(data[i].precio), data[i].frecuenciaName]
+                        ],
+                    };
+                    // doc.table(tableArray, { width: 300, }); // A4 595.28 x 841.89 (portrait) (about width sizes)
+
+                    doc.table(table, {
+                        prepareHeader: () => doc.font("Helvetica-Bold").fontSize(h3),
+                        prepareRow: (row, indexColumn, indexRow, rectRow, rectCell) => {
+                            // doc.font("Helvetica").fontSize(h3).fillColor("black");
+                            if (isNumber(row[0])) {
+                                doc.font("Helvetica").fontSize(h3).fillColor("black");
+                            } else {
+                                if (row[0] == "N°") {
+                                    doc.font("Helvetica-Bold").fontSize(h3);
+                                    doc.addBackground(rectRow, 'black', 0.005);
+                                }
+                            }
+                        },
+                        align: "center",
+                        padding: 5,
+                        columnSpacing: 5,
+                        columnsSize: [27, 70, 110, 70, 45, 35, 55, 65, 65],//792-712
+                        x: doc.x,
+                        y: doc.y + 15,
+                        width: doc.page.width - doc.options.margins.left - doc.options.margins.right
+                    });
+
+                    // move to down
+                    // doc.moveDown(); // separate tables
+
+                    doc.fontSize(h3).text(
+                        `${"DETALLE DE LA VENTA N° "}` + (i + 1),
+                        doc.options.margins.left,
+                        doc.y + 15,
+                        {
+                            width: widthContent,
+                            align: "center",
+                        }
+                    );
+
+                    let contentDetalle = [];
+                    let ini = 0;
+                    for (const indexDeatil of data[i].detail) {
+                        ++ini;
+                        contentDetalle.push([
+                            i + 1 + '.' + ini,
+                            indexDeatil.fecha,
+                            indexDeatil.comprobante + "\n" + indexDeatil.serie + '-' + indexDeatil.numeracion,
+                            indexDeatil.detalle,
+                            indexDeatil.banco,
+                            indexDeatil.comprobanteRef,
+                            numberFormat(indexDeatil.monto)
+                        ]);
+                    }
+
+                    const tableDetalle = {
+                        headers: ["N°", "Fecha", "Comprobante", "Detalle", "Banco", "Comprobante Ref.", "Monto"],
+                        rows: contentDetalle,
+                    };
+
+                    doc.table(tableDetalle, {
+                        prepareHeader: () => doc.font("Helvetica-Bold").fontSize(h3),
+                        prepareRow: (row, indexColumn, indexRow, rectRow, rectCell) => {
+                            doc.font("Helvetica").fontSize(h3).fillColor("black");
+                        },
+                        align: "center",
+                        padding: 5,
+                        columnSpacing: 5,
+                        columnsSize: [35, 70, 110, 70, 70, 100, 50],//792-712
+                        x: doc.x,
+                        y: doc.y + 15,
+                        width: doc.page.width - doc.options.margins.left - doc.options.margins.right
+                    });
+
+                    // move to down
+                    doc.moveDown(2); // separate tables 
+
+                    i++;
                 }
-            );
+            } else {
 
-            doc.fontSize(h3).text(
-                `CLIENTE: ${req.query.idCliente === "" ? "TODOS" : req.query.cliente}`,
-                orgX,
-                doc.y + 50,
-                {
-                    align: "left",
+                if (data.length === 0) {
+                    doc.fontSize(h3).text(
+                        `${"No existe datos relacionados"}`,
+                        doc.options.margins.left,
+                        doc.y + 135,
+                        {
+                            width: widthContent,
+                            align: "center",
+                        }
+                    );
+                } else {
+                    const content = data.map((item, index) => {
+                        return [
+                            ++index,
+                            item.nameDocument + "\n" + item.documento,
+                            item.informacion,
+                            item.nameManzana,
+                            item.nameLote,
+                            item.cuoTotal,
+                            numberFormat(item.cuotaMensual),
+                            numberFormat(item.precio),
+                            item.frecuenciaName
+                        ];
+                    });
+
+                    const table = {
+                        // subtitle: "DETALLE",
+                        headers: ["N°", "Documento", "Cliente", "Manzana", "Lote", "Ctas.", "Cta. Mensual", "Cta. Total", "Tipo Cta."],
+                        rows: content
+                    };
+
+                    doc.table(table, {
+                        prepareHeader: () => doc.font("Helvetica-Bold").fontSize(h3),
+                        prepareRow: (row, indexColumn, indexRow, rectRow, rectCell) => {
+                            // if (indexColumn === 8) {
+                            //     doc.font("Helvetica").fontSize(h3).fillColor("red");
+                            // } else if (indexColumn === 7) {
+                            //     doc.font("Helvetica").fontSize(h3).fillColor("green");
+                            // } else {
+                            doc.font("Helvetica").fontSize(h3).fillColor("black");
+                            // }
+                        },
+                        align: "center",
+                        padding: 5,
+                        columnSpacing: 5,
+                        columnsSize: [27, 70, 110, 70, 45, 35, 55, 65, 65],//792-712
+                        x: doc.x,
+                        y: doc.y + 15,
+                        width: doc.page.width - doc.options.margins.left - doc.options.margins.right
+                    });
                 }
-            );
-
-            doc.fontSize(h3).text(
-                `CLIENTE: ${req.query.idCliente === "" ? "TODOS" : req.query.cliente}`,
-                orgX,
-                doc.y + 50,
-                {
-                    align: "left",
-                }
-            );
-            // doc.fontSize(h3).text(
-            //     `PERIODO: ${dateFormat(req.query.fechaIni)} al ${dateFormat(req.query.fechaFin)}`,
-            //     orgX,
-            //     doc.y + 5, 
-            //     {
-            //         width: 300,
-            //         align: "left",
-            //     }
-            // );
-
-            // if (req.query.idCliente !== "") {
-            //     let content = data.map((item, index) => {
-            //         return [++index,
-            //         item.fecha + "\n" + item.hora,
-            //         item.comprobante + "\n" + item.serie + "-" + item.numeracion,
-            //         item.detalle,
-            //         numberFormat(item.monto)];
-            //     });
-
-            //     const table = {
-            //         subtitle: "DETALLE",
-            //         headers: ["N°", "Fecha", "Comprobante", "Detalle", "Monto"],
-            //         rows: content
-            //     };
-
-            //     doc.table(table, {
-            //         prepareHeader: () => doc.font("Helvetica-Bold").fontSize(h3),
-            //         prepareRow: () => {
-            //             doc.font("Helvetica").fontSize(h3);
-            //         },
-            //         padding: 5,
-            //         columnSpacing: 5,
-            //         columnsSize: [30, 90, 162, 160, 90],
-            //         x: doc.x,
-            //         y: doc.y + 15,
-            //         width: doc.page.width - doc.options.margins.left - doc.options.margins.right
-            //     });
-            // } else {
-
-            //     let array = [];
-            //     for (let item of data) {
-            //         if (array.filter(f => f.idCliente === item.idCliente).length === 0) {
-            //             array.push({
-            //                 "idCliente": item.idCliente,
-            //                 "documento": item.documento,
-            //                 "informacion": item.informacion,
-            //                 "ingresos": item.ingresos,
-            //                 "ventas": item.ventas,
-            //             });
-            //         } else {
-            //             for (let newItem of array) {
-            //                 if (newItem.idCliente === item.idCliente) {
-            //                     let currenteObject = newItem;
-            //                     currenteObject.ingresos += parseFloat(item.ingresos);
-            //                     currenteObject.ventas += parseFloat(item.ventas);
-            //                     break;
-            //                 }
-            //             }
-            //         }
-            //     }
-
-            //     let total = 0;
-            //     let content = array.map((item, index) => {
-            //         total += item.ingresos + item.ventas;
-            //         return [++index, item.documento + "\n" + item.informacion, numberFormat(item.ingresos + item.ventas)];
-            //     });
-
-            //     content.push(["", "SUMA TOTAL:", numberFormat(total)]);
-
-            //     const table = {
-            //         subtitle: "DETALLE",
-            //         headers: ["N°", "Cliente", "Monto"],
-            //         rows: content
-            //     };
-
-            //     doc.table(table, {
-            //         prepareHeader: () => doc.font("Helvetica-Bold").fontSize(h3),
-            //         prepareRow: () => {
-            //             doc.font("Helvetica").fontSize(h3);
-            //         },
-            //         padding: 5,
-            //         columnSpacing: 5,
-            //         columnsSize: [30, 412, 90],
-            //         x: doc.x,
-            //         y: doc.y + 15,
-            //         width: doc.page.width - doc.options.margins.left - doc.options.margins.right
-            //     });
-            // }
+            }
 
             doc.end();
             return getStream.buffer(doc);
@@ -334,9 +374,9 @@ class RepCliente {
                 layout: 'landscape',
                 margins: {
                     top: 40,
-                    bottom: 40,
-                    left: 40,
-                    right: 40
+                    bottom: 35,
+                    left: 35,
+                    right: 35
                 }
             });
 
@@ -353,11 +393,11 @@ class RepCliente {
             let h3 = 9;
             let h4 = 7;
 
-            if (isFile(path.join(__dirname, "..", "path/company/" + sedeInfo.rutaLogo))) {
-                doc.image(path.join(__dirname, "..", "path/company/" + sedeInfo.rutaLogo), orgX, orgY, { width: 75 });
-            } else {
-                doc.image(path.join(__dirname, "..", "path/to/noimage.jpg"), orgX, orgY, { width: 75 });
-            }
+            // if (isFile(path.join(__dirname, "..", "path/company/" + sedeInfo.rutaLogo))) {
+            //     doc.image(path.join(__dirname, "..", "path/company/" + sedeInfo.rutaLogo), orgX, orgY, { width: 75 });
+            // } else {
+            //     doc.image(path.join(__dirname, "..", "path/to/noimage.jpg"), orgX, orgY, { width: 75 });
+            // }
 
             doc.fontSize(h1).text(
                 `${sedeInfo.nombreEmpresa}`,
@@ -413,6 +453,7 @@ class RepCliente {
                     item.documento + " " + item.informacion,
                     item.lote,
                     item.nombre + "\n" + item.serie + "-" + item.numeracion,
+                    numberFormat(item.cuotaMensual),
                     item.numCuota == 1 ? item.numCuota + " COUTA" : item.numCuota + " COUTAS",
                     dateFormat(item.fechaPago),
                     numberFormat(item.total, item.codiso),
@@ -423,7 +464,7 @@ class RepCliente {
 
             const table = {
                 subtitle: "DETALLE",
-                headers: ["N°", "Cliente", "Propiedad", "Comprobante", "Cuotas Pendientes", "Sig. Pago", "Total", "Cobrado", "Por Cobrar"],
+                headers: ["N°", "Cliente", "Propiedad", "Comprobante", "Cta mensual", "Cuotas Pendientes", "Sig. Pago", "Total", "Cobrado", "Por Cobrar"],
                 rows: content
             };
 
@@ -441,7 +482,7 @@ class RepCliente {
                 align: "center",
                 padding: 5,
                 columnSpacing: 5,
-                columnsSize: [30, 125, 80, 100, 80, 72, 75, 75, 75],//792-712
+                columnsSize: [25, 130, 75, 90, 60, 70, 65, 70, 70, 65],//792-712
                 x: doc.x,
                 y: doc.y + 15,
                 width: doc.page.width - doc.options.margins.left - doc.options.margins.right
@@ -480,11 +521,11 @@ class RepCliente {
             let h3 = 9;
             let h4 = 8;
 
-            if (isFile(path.join(__dirname, "..", "path/company/" + sedeInfo.rutaLogo))) {
-                doc.image(path.join(__dirname, "..", "path/company/" + sedeInfo.rutaLogo), orgX, orgY, { width: 75 });
-            } else {
-                doc.image(path.join(__dirname, "..", "path/to/noimage.jpg"), orgX, orgY, { width: 75 });
-            }
+            // if (isFile(path.join(__dirname, "..", "path/company/" + sedeInfo.rutaLogo))) {
+            //     doc.image(path.join(__dirname, "..", "path/company/" + sedeInfo.rutaLogo), orgX, orgY, { width: 75 });
+            // } else {
+            //     doc.image(path.join(__dirname, "..", "path/to/noimage.jpg"), orgX, orgY, { width: 75 });
+            // }
 
             doc.fontSize(h1).text(
                 `${sedeInfo.nombreEmpresa}`,

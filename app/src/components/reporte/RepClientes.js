@@ -123,6 +123,8 @@ class RepClientes extends React.Component {
 
         const data = {
             "idSede": "SD0001",
+            "idProyecto": this.state.idProyecto,
+            "nombreProyecto": this.state.nombreProyecto,
             "fechaIni": this.state.fechaIni,
             "fechaFin": this.state.fechaFin,
             "idCliente": this.state.idCliente,
@@ -143,6 +145,8 @@ class RepClientes extends React.Component {
 
         const data = {
             "idSede": "SD0001",
+            "idProyecto": this.state.idProyecto,
+            "nombreProyecto": this.state.nombreProyecto,
             "fechaIni": this.state.fechaIni,
             "fechaFin": this.state.fechaFin,
             "idCliente": this.state.idCliente,

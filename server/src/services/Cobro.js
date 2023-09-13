@@ -22,7 +22,8 @@ class Cobro {
             WHEN cn.idConcepto IS NOT NULL THEN cn.nombre
             ELSE 
                 CASE 
-                    WHEN cv.idPlazo = 0 THEN 'CUOTA INICIAL' 
+                    WHEN cv.idPlazo = 0 AND (vd.precio = cv.precio) THEN 'CANCELACIÓN DEL LOTE'
+                    WHEN cv.idPlazo = 0 AND (cv.precio < vd.precio) THEN 'CUOTA INICIAL'
                     WHEN pl.cuota IS NOT NULL THEN CONCAT('CUOTA',' ',pl.cuota) 
                     ELSE '-'
                 END 
@@ -1210,7 +1211,8 @@ class Cobro {
                 imp.porcentaje,
 
                 CASE 
-                    WHEN cv.idPlazo = 0 THEN 'CUOTA INICIAL'
+                    WHEN cv.idPlazo = 0 AND (vd.precio = cv.precio) THEN 'CANCELACIÓN DEL LOTE'
+                    WHEN cv.idPlazo = 0 AND (cv.precio < vd.precio) THEN 'CUOTA INICIAL'
                     WHEN pl.cuota IS NOT NULL THEN CONCAT('CUOTA',' ',pl.cuota)
                     ELSE '-' 
                 END AS concepto,
@@ -1225,6 +1227,7 @@ class Cobro {
                 INNER JOIN impuesto AS imp ON cv.idImpuesto  = imp.idImpuesto
                 INNER JOIN medida AS md ON cv.idMedida = md.idMedida 
                 INNER JOIN venta AS v ON cv.idVenta = v.idVenta 
+                INNER JOIN ventadetalle vd on vd.idVenta = v.idVenta
                 INNER JOIN comprobante AS cp ON v.idComprobante = cp.idComprobante
                 WHERE cv.idCobro = ?`, [
                     req.query.idCobro

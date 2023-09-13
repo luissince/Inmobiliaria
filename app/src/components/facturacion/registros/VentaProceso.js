@@ -400,7 +400,7 @@ class VentaProceso extends React.Component {
         let saldo = this.state.importeTotal - (this.state.montoInicialCheck ? this.state.inicial : 0)
         let letra = saldo / this.state.numCuota
 
-        await this.setStateAsync({ letraMensual: letra })
+        await this.setStateAsync({ letraMensual: letra.toFixed(2) })
     }
 
     async onEventLimpiar() {

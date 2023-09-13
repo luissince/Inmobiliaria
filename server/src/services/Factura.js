@@ -613,7 +613,7 @@ class Factura {
                         cuota,
                         now.getFullYear() + "-" + ((now.getMonth() + 1) < 10 ? "0" + (now.getMonth() + 1) : (now.getMonth() + 1)) + "-" + now.getDate(),
                         currentTime(),
-                        cuotaMes,
+                        cuotaMes.toFixed(2),
                         0
                     ]);
                     idPlazo++;
