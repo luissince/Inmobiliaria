@@ -1227,7 +1227,7 @@ class Cobro {
                 INNER JOIN impuesto AS imp ON cv.idImpuesto  = imp.idImpuesto
                 INNER JOIN medida AS md ON cv.idMedida = md.idMedida 
                 INNER JOIN venta AS v ON cv.idVenta = v.idVenta 
-                INNER JOIN ventadetalle vd on vd.idVenta = v.idVenta
+                INNER JOIN ventaDetalle vd on vd.idVenta = v.idVenta
                 INNER JOIN comprobante AS cp ON v.idComprobante = cp.idComprobante
                 WHERE cv.idCobro = ?`, [
                     req.query.idCobro
