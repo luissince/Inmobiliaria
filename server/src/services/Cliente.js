@@ -539,11 +539,11 @@ class Cliente {
                 CASE WHEN v.frecuencia = 30 THEN 'FIN DE MES' ELSE 'CADA QUINCENA' END AS frecuenciaName
                 from cliente AS c
                 inner join venta as v on v.idCliente = c.idCliente
-                INNER join ventadetalle AS vd on vd.idVenta = v.idVenta 
+                INNER join ventaDetalle AS vd on vd.idVenta = v.idVenta 
                 inner join lote as l on l.idLote= vd.idLote
                 inner join manzana as m on m.idManzana = l.idManzana
                 INNER join proyecto as p on p.idProyecto = v.idProyecto
-                INNER JOIN tipodocumento as td on td.idTipoDocumento = c.idTipoDocumento
+                INNER JOIN tipoDocumento as td on td.idTipoDocumento = c.idTipoDocumento
                 where v.idProyecto = ? AND c.idCliente = ?
                 ORDER BY v.idVenta ASC`, [
                     req.query.idProyecto,
@@ -628,11 +628,11 @@ class Cliente {
                 CASE WHEN v.frecuencia = 30 THEN 'FIN DE MES' ELSE 'CADA QUINCENA' END AS frecuenciaName
                 from cliente AS c
                 inner join venta as v on v.idCliente = c.idCliente
-                INNER join ventadetalle AS vd on vd.idVenta = v.idVenta 
+                INNER join ventaDetalle AS vd on vd.idVenta = v.idVenta 
                 inner join lote as l on l.idLote= vd.idLote
                 inner join manzana as m on m.idManzana = l.idManzana
                 INNER join proyecto as p on p.idProyecto = v.idProyecto
-                INNER JOIN tipodocumento as td on td.idTipoDocumento = c.idTipoDocumento
+                INNER JOIN tipoDocumento as td on td.idTipoDocumento = c.idTipoDocumento
                 where v.idProyecto = ? AND c.fecha BETWEEN ? AND ?`, [
                     req.query.idProyecto,
                     req.query.fechaIni,
