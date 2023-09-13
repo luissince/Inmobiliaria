@@ -29,11 +29,11 @@ class RepCliente {
             let h2 = 11;
             let h3 = 9;
 
-            // if (isFile(path.join(__dirname, "..", "path/company/" + sedeInfo.rutaLogo))) {
-            //     doc.image(path.join(__dirname, "..", "path/company/" + sedeInfo.rutaLogo), orgX, orgY, { width: 75 });
-            // } else {
-            //     doc.image(path.join(__dirname, "..", "path/to/noimage.jpg"), orgX, orgY, { width: 75 });
-            // }
+            if (isFile(path.join(__dirname, "..", "path/company/" + sedeInfo.rutaLogo))) {
+                doc.image(path.join(__dirname, "..", "path/company/" + sedeInfo.rutaLogo), orgX, orgY, { width: 75 });
+            } else {
+                doc.image(path.join(__dirname, "..", "path/to/noimage.jpg"), orgX, orgY, { width: 75 });
+            }
 
             doc.fontSize(h1).text(
                 `${sedeInfo.nombreEmpresa}`,
@@ -393,11 +393,11 @@ class RepCliente {
             let h3 = 9;
             let h4 = 7;
 
-            // if (isFile(path.join(__dirname, "..", "path/company/" + sedeInfo.rutaLogo))) {
-            //     doc.image(path.join(__dirname, "..", "path/company/" + sedeInfo.rutaLogo), orgX, orgY, { width: 75 });
-            // } else {
-            //     doc.image(path.join(__dirname, "..", "path/to/noimage.jpg"), orgX, orgY, { width: 75 });
-            // }
+            if (isFile(path.join(__dirname, "..", "path/company/" + sedeInfo.rutaLogo))) {
+                doc.image(path.join(__dirname, "..", "path/company/" + sedeInfo.rutaLogo), orgX, orgY, { width: 75 });
+            } else {
+                doc.image(path.join(__dirname, "..", "path/to/noimage.jpg"), orgX, orgY, { width: 75 });
+            }
 
             doc.fontSize(h1).text(
                 `${sedeInfo.nombreEmpresa}`,
@@ -521,11 +521,11 @@ class RepCliente {
             let h3 = 9;
             let h4 = 8;
 
-            // if (isFile(path.join(__dirname, "..", "path/company/" + sedeInfo.rutaLogo))) {
-            //     doc.image(path.join(__dirname, "..", "path/company/" + sedeInfo.rutaLogo), orgX, orgY, { width: 75 });
-            // } else {
-            //     doc.image(path.join(__dirname, "..", "path/to/noimage.jpg"), orgX, orgY, { width: 75 });
-            // }
+            if (isFile(path.join(__dirname, "..", "path/company/" + sedeInfo.rutaLogo))) {
+                doc.image(path.join(__dirname, "..", "path/company/" + sedeInfo.rutaLogo), orgX, orgY, { width: 75 });
+            } else {
+                doc.image(path.join(__dirname, "..", "path/to/noimage.jpg"), orgX, orgY, { width: 75 });
+            }
 
             doc.fontSize(h1).text(
                 `${sedeInfo.nombreEmpresa}`,
