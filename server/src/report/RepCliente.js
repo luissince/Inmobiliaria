@@ -112,15 +112,7 @@ class RepCliente {
                     doc.table(table, {
                         prepareHeader: () => doc.font("Helvetica-Bold").fontSize(h3),
                         prepareRow: (row, indexColumn, indexRow, rectRow, rectCell) => {
-                            // doc.font("Helvetica").fontSize(h3).fillColor("black");
-                            if (isNumber(row[0])) {
-                                doc.font("Helvetica").fontSize(h3).fillColor("black");
-                            } else {
-                                if (row[0] == "N°") {
-                                    doc.font("Helvetica-Bold").fontSize(h3);
-                                    doc.addBackground(rectRow, 'black', 0.005);
-                                }
-                            }
+                            doc.font("Helvetica").fontSize(h3).fillColor("black");
                         },
                         align: "center",
                         padding: 5,
@@ -132,7 +124,7 @@ class RepCliente {
                     });
 
                     // move to down
-                    // doc.moveDown(); // separate tables
+                    doc.moveDown(); // separate tables
 
                     doc.fontSize(h3).text(
                         `${"DETALLE DE LA VENTA N° "}` + (i + 1),
@@ -178,8 +170,22 @@ class RepCliente {
                         width: doc.page.width - doc.options.margins.left - doc.options.margins.right
                     });
 
-                    // move to down
-                    doc.moveDown(2); // separate tables 
+                    if (data[i].detail.length == 0) {
+                        doc.fontSize(h3).text(
+                            `${"No existe datos registrados."}`,
+                            doc.options.margins.left,
+                            doc.y,
+                            {
+                                width: widthContent,
+                                align: "center",
+                            }
+                        );
+
+                        doc.moveDown(2);
+                    } else {
+                        // move to down
+                        doc.moveDown(2);
+                    }
 
                     i++;
                 }
@@ -219,13 +225,7 @@ class RepCliente {
                     doc.table(table, {
                         prepareHeader: () => doc.font("Helvetica-Bold").fontSize(h3),
                         prepareRow: (row, indexColumn, indexRow, rectRow, rectCell) => {
-                            // if (indexColumn === 8) {
-                            //     doc.font("Helvetica").fontSize(h3).fillColor("red");
-                            // } else if (indexColumn === 7) {
-                            //     doc.font("Helvetica").fontSize(h3).fillColor("green");
-                            // } else {
                             doc.font("Helvetica").fontSize(h3).fillColor("black");
-                            // }
                         },
                         align: "center",
                         padding: 5,
