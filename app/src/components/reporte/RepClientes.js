@@ -155,7 +155,7 @@ class RepClientes extends React.Component {
 
         let ciphertext = CryptoJS.AES.encrypt(JSON.stringify(data), 'key-report-inmobiliaria').toString();
 
-        let filename = this.state.idCliente ? "aportaciones.xlsx": "Reporte de Clientes"
+        let filename = this.state.idCliente ? "aportaciones.xlsx": "Reporte de Clientes.xlsx"
 
         this.refUseFile.current.download({
             "name": "Reporte Cliente Aportaciones",
