@@ -400,7 +400,7 @@ async function generateExcelDeudas(req, sedeInfo, data) {
             ws.cell(rowY, 3).string(item.lote).style(styleBody)
             ws.cell(rowY, 4).string(item.nombre + "\n" + item.serie + "-" + item.numeracion).style(styleBody)
             ws.cell(rowY, 5).number(parseFloat(formatMoney(item.cuotaMensual))).style(styleBodyFloat)
-            ws.cell(rowY, 6).string(item.numCuota == 1 ? item.numCuota + " CUOTA" : item.numCuota + " COUTAS").style(styleBody)
+            ws.cell(rowY, 6).string(item.numCuota == 1 ? item.numCuota + " CUOTA" : item.numCuota + " CUOTAS").style(styleBody)
             ws.cell(rowY, 7).string(dateFormat(item.fechaPago)).style(styleBody)
 
             ws.cell(rowY, 8).number(parseFloat(formatMoney(item.total))).style(styleBodyFloat)
