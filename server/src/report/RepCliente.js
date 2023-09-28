@@ -454,7 +454,7 @@ class RepCliente {
                     item.lote,
                     item.nombre + "\n" + item.serie + "-" + item.numeracion,
                     numberFormat(item.cuotaMensual),
-                    item.numCuota == 1 ? item.numCuota + " COUTA" : item.numCuota + " COUTAS",
+                    item.numCuota == 1 ? item.numCuota + " COUTA" : item.numCuota + " CUOTAS",
                     dateFormat(item.fechaPago),
                     numberFormat(item.total, item.codiso),
                     numberFormat(item.cobrado, item.codiso),
