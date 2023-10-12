@@ -1726,7 +1726,8 @@ class Cobro {
                     c.estado,
                     IFNULL(SUM(cd.precio*cd.cantidad),SUM(cv.precio)) AS monto,
                     u.nombres,
-                    u.apellidos
+                    u.apellidos,
+                    p.nombre AS nombreProyecto
                     FROM cobro AS c
                     INNER JOIN cliente AS cl ON c.idCliente = cl.idCliente
                     INNER JOIN banco AS b ON c.idBanco = b.idBanco
@@ -1739,15 +1740,24 @@ class Cobro {
                     LEFT JOIN venta AS v ON cv.idVenta = v.idVenta 
                     LEFT JOIN comprobante AS cp ON v.idComprobante = cp.idComprobante
                     LEFT JOIN usuario AS u ON u.idUsuario = c.idUsuario
+                    LEFT JOIN proyecto AS p ON p.idProyecto = c.idProyecto
                     LEFT JOIN notaCredito AS nc ON nc.idCobro = c.idCobro AND nc.estado = 1
                     WHERE 
-                    c.fecha BETWEEN ? AND ? AND ? = '' AND ? = ''
+                    c.fecha BETWEEN ? AND ? AND ? = '' AND ? = '' AND ? = ''
                     OR
-                    c.fecha BETWEEN ? AND ? AND ? = '' AND u.idUsuario = ?
+                    c.fecha BETWEEN ? AND ? AND ? = '' AND u.idUsuario = ? AND ? = ''
                     OR
-                    c.fecha BETWEEN ? AND ? AND co.idComprobante = ? AND ? = ''
+                    c.fecha BETWEEN ? AND ? AND co.idComprobante = ? AND ? = '' AND ? = ''
                     OR
-                    c.fecha BETWEEN ? AND ? AND co.idComprobante = ? AND u.idUsuario = ?
+                    c.fecha BETWEEN ? AND ? AND ? = '' AND ? = '' AND c.idProyecto = ?
+                    OR
+                    c.fecha BETWEEN ? AND ? AND co.idComprobante = ? AND u.idUsuario = ? AND ? = ''
+                    OR
+                    c.fecha BETWEEN ? AND ? AND ? = '' AND u.idUsuario = ? AND c.idProyecto = ?
+                    OR
+                    c.fecha BETWEEN ? AND ? AND co.idComprobante = ? AND ? = '' AND c.idProyecto = ?
+                    OR
+                    c.fecha BETWEEN ? AND ? AND co.idComprobante = ? AND u.idUsuario = ? AND c.idProyecto = ?
                     GROUP BY c.idCobro
                     ORDER BY c.fecha DESC,c.hora DESC
                     `, [
@@ -1755,21 +1765,49 @@ class Cobro {
                     req.query.fechaFin,
                     req.query.idComprobante,
                     req.query.idUsuario,
+                    req.query.idProyecto,
 
                     req.query.fechaIni,
                     req.query.fechaFin,
                     req.query.idComprobante,
                     req.query.idUsuario,
+                    req.query.idProyecto,
 
                     req.query.fechaIni,
                     req.query.fechaFin,
                     req.query.idComprobante,
                     req.query.idUsuario,
+                    req.query.idProyecto,
 
                     req.query.fechaIni,
                     req.query.fechaFin,
                     req.query.idComprobante,
                     req.query.idUsuario,
+                    req.query.idProyecto,
+
+                    req.query.fechaIni,
+                    req.query.fechaFin,
+                    req.query.idComprobante,
+                    req.query.idUsuario,
+                    req.query.idProyecto,
+
+                    req.query.fechaIni,
+                    req.query.fechaFin,
+                    req.query.idComprobante,
+                    req.query.idUsuario,
+                    req.query.idProyecto,
+
+                    req.query.fechaIni,
+                    req.query.fechaFin,
+                    req.query.idComprobante,
+                    req.query.idUsuario,
+                    req.query.idProyecto,
+
+                    req.query.fechaIni,
+                    req.query.fechaFin,
+                    req.query.idComprobante,
+                    req.query.idUsuario,
+                    req.query.idProyecto,
                 ]);
 
                 const gastos = await conec.query(`SELECT 
@@ -1785,7 +1823,8 @@ class Cobro {
                     g.observacion, 
                     DATE_FORMAT(g.fecha,'%d/%m/%Y') as fecha, 
                     g.hora,
-                    IFNULL(SUM(gd.precio*gd.cantidad),0) AS monto
+                    IFNULL(SUM(gd.precio*gd.cantidad),0) AS monto,
+                    p.nombre AS nombreProyecto
                     FROM gasto AS g          
                     INNER JOIN cliente AS cl ON g.idCliente = cl.idCliente 
                     INNER JOIN banco AS b ON g.idBanco = b.idBanco
@@ -1793,21 +1832,38 @@ class Cobro {
                     INNER JOIN comprobante AS co ON co.idComprobante = g.idComprobante   
                     LEFT JOIN usuario AS u ON u.idUsuario = g.idUsuario    
                     LEFT JOIN gastoDetalle AS gd ON g.idGasto = gd.idGasto
-                    LEFT JOIN concepto AS cn ON gd.idConcepto = cn.idConcepto 
+                    LEFT JOIN concepto AS cn ON gd.idConcepto = cn.idConcepto
+                    LEFT JOIN proyecto AS p ON p.idProyecto = g.idProyecto
                     WHERE 
                     g.fecha BETWEEN ? AND ? AND ? = ''
                     OR
-                    g.fecha BETWEEN ? AND ? AND u.idUsuario = ?
+                    g.fecha BETWEEN ? AND ? AND u.idUsuario = ? AND ? = ''
+                    OR 
+                    g.fecha BETWEEN ? AND ? AND ? = '' AND ? = g.idProyecto = ?
+                    OR
+                    g.fecha BETWEEN ? AND ? AND u.idUsuario AND ? = g.idProyecto = ?
                     GROUP BY g.idGasto
                     ORDER BY g.fecha DESC, g.hora DESC
                     `, [
                     req.query.fechaIni,
                     req.query.fechaFin,
                     req.query.idUsuario,
+                    req.query.idProyecto,
 
                     req.query.fechaIni,
                     req.query.fechaFin,
                     req.query.idUsuario,
+                    req.query.idProyecto,
+
+                    req.query.fechaIni,
+                    req.query.fechaFin,
+                    req.query.idUsuario,
+                    req.query.idProyecto,
+
+                    req.query.fechaIni,
+                    req.query.fechaFin,
+                    req.query.idUsuario,
+                    req.query.idProyecto,
                 ]);
 
                 return { "cobros": cobros, "gastos": gastos };
@@ -1822,22 +1878,32 @@ class Cobro {
                     WHEN b.tipoCuenta = 1 THEN 'Banco'
                     WHEN b.tipoCuenta = 2 THEN 'Tarjeta'
                     ELSE 'Efectivo' END AS 'tipoCuenta',
-                    IFNULL(SUM(cd.precio*cd.cantidad),SUM(cv.precio)) AS monto
+                    IFNULL(SUM(cd.precio*cd.cantidad),SUM(cv.precio)) AS monto,
+                    p.nombre AS nombreProyecto
                     FROM cobro as c
                     LEFT JOIN banco AS b ON c.idBanco = b.idBanco
                     LEFT JOIN cobroDetalle AS cd ON c.idCobro = cd.idCobro
                     LEFT JOIN concepto AS co ON co.idConcepto = cd.idConcepto
                     LEFT JOIN cobroVenta AS cv ON cv.idCobro = c.idCobro
+                    LEFT JOIN proyecto AS p ON p.idProyecto = c.idProyecto
                     LEFT JOIN notaCredito AS nc ON nc.idCobro = c.idCobro AND nc.estado = 1
                     WHERE 
                     c.fecha BETWEEN ? AND ? AND c.estado = 1 AND nc.idNotaCredito IS NULL AND (
-                        ? = '' AND ? = ''
+                        ? = '' AND ? = '' AND ? = ''
                         OR
-                        ? = '' AND c.idUsuario = ?
+                        ? = '' AND c.idUsuario = ? AND ? = ''
                         OR
-                        c.idComprobante = ? AND ? = ''
+                        c.idComprobante = ? AND ? = '' AND ? = ''
                         OR
-                        c.idComprobante = ? AND c.idUsuario = ?
+                        ? = '' AND ? = '' AND c.idProyecto = ?
+                        OR
+                        c.idComprobante = ? AND c.idUsuario = ? AND ? = ''
+                        OR
+                        ? = '' AND c.idUsuario = ? AND c.idProyecto = ?
+                        OR
+                        c.idComprobante = ? AND ? = '' AND c.idProyecto = ?
+                        OR
+                        c.idComprobante = ? AND c.idUsuario = ? AND c.idProyecto = ?
                     )
                     GROUP BY c.idCobro`,
                     [
@@ -1846,15 +1912,35 @@ class Cobro {
 
                         req.query.idComprobante,
                         req.query.idUsuario,
+                        req.query.idProyecto,
 
                         req.query.idComprobante,
                         req.query.idUsuario,
+                        req.query.idProyecto,
 
                         req.query.idComprobante,
                         req.query.idUsuario,
+                        req.query.idProyecto,
 
                         req.query.idComprobante,
                         req.query.idUsuario,
+                        req.query.idProyecto,
+
+                        req.query.idComprobante,
+                        req.query.idUsuario,
+                        req.query.idProyecto,
+
+                        req.query.idComprobante,
+                        req.query.idUsuario,
+                        req.query.idProyecto,
+
+                        req.query.idComprobante,
+                        req.query.idUsuario,
+                        req.query.idProyecto,
+
+                        req.query.idComprobante,
+                        req.query.idUsuario,
+                        req.query.idProyecto,
                     ]);
 
                 const gastos = await conec.query(`
@@ -1868,15 +1954,21 @@ class Cobro {
                     WHEN b.tipoCuenta = 1 THEN 'Banco'
                     WHEN b.tipoCuenta = 2 THEN 'Tarjeta'
                     ELSE 'Efectivo' END AS 'tipoCuenta',
-                    SUM(gd.precio*gd.cantidad) AS monto
+                    SUM(gd.precio*gd.cantidad) AS monto,
+                    p.nombre AS nombreProyecto
                     FROM gasto as g
                     LEFT JOIN banco AS b ON g.idBanco = b.idBanco
                     LEFT JOIN gastoDetalle AS gd ON g.idGasto = gd.idGasto
                     LEFT JOIN concepto AS co ON co.idConcepto = gd.idConcepto
+                    LEFT JOIN proyecto AS p ON p.idProyecto = g.idProyecto
                     WHERE g.fecha BETWEEN ? AND ? AND (
-                        ? = ''
+                        ? = '' AND ? = ''
                         OR
-                        g.idUsuario = ?
+                        g.idUsuario = ? AND ? = ''
+                        OR
+                        ? = '' AND g.idProyecto = ?
+                        OR
+                        g.idUsuario = ? AND g.idProyecto = ?
                     )
                     GROUP BY g.idGasto`,
                     [
@@ -1884,8 +1976,16 @@ class Cobro {
                         req.query.fechaFin,
 
                         req.query.idUsuario,
+                        req.query.idProyecto,
 
                         req.query.idUsuario,
+                        req.query.idProyecto,
+
+                        req.query.idUsuario,
+                        req.query.idProyecto,
+
+                        req.query.idUsuario,
+                        req.query.idProyecto,
                     ]);
 
                 let lista = [...cobros, ...gastos];

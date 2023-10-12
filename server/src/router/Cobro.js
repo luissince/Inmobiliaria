@@ -307,6 +307,7 @@ router.get('/repgeneralcobros', async function (req, res) {
     req.query.isDetallado = decryptedData.isDetallado;
     req.query.idComprobante = decryptedData.idComprobante;
     req.query.idUsuario = decryptedData.idUsuario;
+    req.query.idProyecto = decryptedData.idProyecto;
 
     const sedeInfo = await sede.infoSedeReporte(req);
 
@@ -341,6 +342,7 @@ router.get('/excelgeneralcobros', async function (req, res) {
     req.query.isDetallado = decryptedData.isDetallado;
     req.query.idComprobante = decryptedData.idComprobante;
     req.query.idUsuario = decryptedData.idUsuario;
+    req.query.idProyecto = decryptedData.idProyecto;
 
     const sedeInfo = await sede.infoSedeReporte(req);
 
@@ -350,7 +352,7 @@ router.get('/excelgeneralcobros', async function (req, res) {
     }
 
     const detalle = await cobro.cobroGeneral(req);
-
+  
     if (typeof detalle === 'object') {
 
         const data = await generateExcel(req, sedeInfo, detalle);

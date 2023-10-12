@@ -24,12 +24,15 @@ class RepFinanciero extends React.Component {
             idBanco: '',
             bancos: [],
 
+            idProyecto: '',
             idComprobante: '',
             comprobantes: [],
             comprobanteCheck: true,
+            proyectoCheck: true,
 
             idUsuario: '',
             usuarios: [],
+            proyectos: [],
             usuarioCheck: true,
 
             loading: true,
@@ -41,6 +44,7 @@ class RepFinanciero extends React.Component {
         this.refCliente = React.createRef();
         this.refBanco = React.createRef();
 
+        this.refProyecto = React.createRef();
         this.refComprobante = React.createRef();
         this.refUsuario = React.createRef();
         this.refBancoGasto = React.createRef();
@@ -70,6 +74,10 @@ class RepFinanciero extends React.Component {
                 signal: this.abortControllerView.signal
             });
 
+            const proyecto = await axios.get("/api/proyecto/combo", {
+                signal: this.abortControllerView.signal
+            });
+
             const facturado = await apiComprobanteListcombo(this.abortControllerView.signal, {
                 "tipo": "1",
                 "estado": "all"
@@ -85,6 +93,7 @@ class RepFinanciero extends React.Component {
                 fechaFin: currentDate(),
                 usuarios: usuario.data,
                 comprobantes: [...comprobante.data, ...facturado.data],
+                proyectos: proyecto.data,
 
                 loading: false
             });
@@ -112,6 +121,7 @@ class RepFinanciero extends React.Component {
             "isDetallado": this.state.isDetallado,
             "idComprobante": this.state.idComprobante,
             "idUsuario": this.state.idUsuario,
+            "idProyecto": this.state.idProyecto,
         }
 
         let ciphertext = CryptoJS.AES.encrypt(JSON.stringify(data), 'key-report-inmobiliaria').toString();
@@ -133,6 +143,7 @@ class RepFinanciero extends React.Component {
             "isDetallado": this.state.isDetallado,
             "idComprobante": this.state.idComprobante,
             "idUsuario": this.state.idUsuario,
+            "idProyecto": this.state.idProyecto,
         }
 
         let ciphertext = CryptoJS.AES.encrypt(JSON.stringify(data), 'key-report-inmobiliaria').toString();
@@ -248,6 +259,51 @@ class RepFinanciero extends React.Component {
                                         >
                                         </input>
                                         <label className="custom-control-label" htmlFor="customSwitch2">{this.state.isDetallado ? 'Si' : 'No'}</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="col">
+                                <div className="form-group">
+                                    <label>Proyecto</label>
+                                    <div className="input-group">
+                                        <select
+                                            title="Lista de Proyectos"
+                                            className="form-control"
+                                            ref={this.refProyecto}
+                                            value={this.state.idProyecto}
+                                            disabled={this.state.proyectoCheck}
+                                            onChange={async (event) => {
+                                                await this.setStateAsync({ idProyecto: event.target.value });
+                                                if (this.state.idProyecto === '') {
+                                                    await this.setStateAsync({ proyectoCheck: true });
+                                                }
+                                            }}
+                                        >
+                                            <option value="">-- Todos --</option>
+                                            {
+                                                this.state.proyectos.map((item, index) => (
+                                                    <option key={index} value={item.idProyecto}>{(index+1) + '.- ' +item.nombre }</option>
+                                                ))
+                                            }
+                                        </select>
+                                        <div className="input-group-append">
+                                            <div className="input-group-text">
+                                                <div className="form-check form-check-inline m-0">
+                                                    <input
+                                                        className="form-check-input"
+                                                        type="checkbox"
+                                                        checked={this.state.proyectoCheck}
+                                                        onChange={async (event) => {
+                                                            await this.setStateAsync({ proyectoCheck: event.target.checked })
+                                                            if (this.state.proyectoCheck) {
+                                                                await this.setStateAsync({ idProyecto: '' });
+                                                            }
+                                                        }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

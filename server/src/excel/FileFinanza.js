@@ -17,6 +17,16 @@ async function generateExcel(req, sedeInfo, data) {
             },
         });
 
+        const styleNameProyecto = wb.createStyle({
+            alignment: {
+                horizontal: 'left'
+            },
+            font: {
+                color: '#000000',
+                size: 12,
+            },
+        });
+
         const styleHeader = wb.createStyle({
             alignment: {
                 horizontal: 'left'
@@ -87,9 +97,15 @@ async function generateExcel(req, sedeInfo, data) {
             ws.cell(2, 1, 2, 11, true).string(`RUC: ${sedeInfo.ruc}`).style(styleTitle);
             ws.cell(3, 1, 3, 11, true).string(`${sedeInfo.direccion}`).style(styleTitle);
             ws.cell(4, 1, 4, 11, true).string(`Celular: ${sedeInfo.celular} / Telefono: ${sedeInfo.telefono}`).style(styleTitle);
-
+            
             ws.cell(6, 1, 6, 11, true).string(`REPORTE DE COBROS Y GASTOS`).style(styleTitle);
-            ws.cell(7, 1, 7, 11, true).string(`PERIODO: ${dateFormat(req.query.fechaIni)} al ${dateFormat(req.query.fechaFin)}`).style(styleTitle);
+            if (sedeInfo.nombreProyecto) {
+                ws.cell(7, 1, 7, 7, true).string(`PROYECTO: ${sedeInfo.nombreProyecto}`).style(styleNameProyecto);
+                ws.cell(7, 8, 7, 11, true).string(`PERIODO: ${dateFormat(req.query.fechaIni)} al ${dateFormat(req.query.fechaFin)}`).style(styleTitle);
+            } else {
+                ws.cell(7, 1, 7, 11, true).string(`PERIODO: ${dateFormat(req.query.fechaIni)} al ${dateFormat(req.query.fechaFin)}`).style(styleTitle);
+            }
+
 
             const headerCon = ["#", "Comprobante", "Correlativo", "Documento", "Cliente", "Detalle", "Banco", "Fecha", "Usuario", "Monto", "Anulado"];
             headerCon.map((item, index) => ws.cell(9, 1 + index).string(item).style(styleTableHeader));
@@ -142,16 +158,28 @@ async function generateExcel(req, sedeInfo, data) {
             ws.cell(4, 1, 4, 6, true).string(`Celular: ${sedeInfo.celular} / Telefono: ${sedeInfo.telefono}`).style(styleTitle);
 
             ws.cell(6, 1, 6, 6, true).string(`REPORTE DE COBROS Y GASTOS`).style(styleTitle);
-            ws.cell(7, 1, 7, 6, true).string(`PERIODO: ${dateFormat(req.query.fechaIni)} al ${dateFormat(req.query.fechaFin)}`).style(styleTitle);
 
-            ws.cell(9, 1, 9, 2, true).string(`RESUMEN DE CONCEPTOS`).style(styleHeader);
+            let rowY = 10;
+            if (sedeInfo.nombreProyecto) {
+                ws.cell(7, 1, 7, 6, true).string(`PERIODO: ${dateFormat(req.query.fechaIni)} al ${dateFormat(req.query.fechaFin)}`).style(styleTitle);
+                ws.cell(9, 1, 9, 6, true).string(`PROYECTO: ${sedeInfo.nombreProyecto}`).style(styleNameProyecto);
+                
 
+                ws.cell(11, 1, 11, 2, true).string(`RESUMEN DE CONCEPTOS`).style(styleHeader);
+                
+                rowY = 12;
+            } else {
+                ws.cell(7, 1, 7, 6, true).string(`PERIODO: ${dateFormat(req.query.fechaIni)} al ${dateFormat(req.query.fechaFin)}`).style(styleTitle);
+
+                ws.cell(9, 1, 9, 2, true).string(`RESUMEN DE CONCEPTOS`).style(styleHeader);
+            }
+            
             const headerCon = ["#", "Concepto", "Cantidad", "Ingreso", "salida", "Total"];
-            headerCon.map((item, index) => ws.cell(10, 1 + index).string(item).style(styleTableHeader));
-
+            headerCon.map((item, index) => ws.cell(rowY, 1 + index).string(item).style(styleTableHeader));
+            
             let sumaIngreso = 0;
             let sumaEgreso = 0;
-            let rowY = 10;
+            
             data.conceptos.map((item, index) => {
                 rowY = rowY + 1;
 

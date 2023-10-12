@@ -242,12 +242,21 @@ class Sede {
                 claveEmail
                 FROM empresa LIMIT 1`);
 
-            let result = [...sede, ...empresa];
+            let proyecto = await conec.query(`SELECT 
+                idProyecto,
+                nombre AS nombreProyecto
+                FROM proyecto
+                WHERE idProyecto = ?`, [
+                    req.query.idProyecto,
+                ]);
+
+            let result = [...sede, ...empresa, ...proyecto];
 
             if (result.length > 1) {
                 return {
                     ...result[0],
                     ...result[1],
+                    ...result[2],
                 };
             } else {
                 return "Datos no encontrados";

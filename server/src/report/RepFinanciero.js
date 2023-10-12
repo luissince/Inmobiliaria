@@ -64,15 +64,37 @@ class RepFinanciero {
                 }
             );
 
-            doc.fontSize(h3).text(
-                `PERIODO: ${dateFormat(req.query.fechaIni)} al ${dateFormat(req.query.fechaFin)}`,
-                orgX,
-                cabeceraY + 25,
-                {
-                    width: 300,
-                    align: "left",
-                }
-            );
+            if (sedeInfo.nombreProyecto) {
+                doc.fontSize(h3).text(
+                    `PROYECTO: ${sedeInfo.nombreProyecto}`,
+                    orgX,
+                    cabeceraY + 25,
+                    {
+                        width: 300,
+                        align: "left",
+                    }
+                );
+
+                doc.fontSize(h3).text(
+                    `PERIODO: ${dateFormat(req.query.fechaIni)} al ${dateFormat(req.query.fechaFin)}`,
+                    orgX + 200,
+                    cabeceraY + 25,
+                    {
+                        width: 300,
+                        align: "right",
+                    }
+                );
+            } else {
+                doc.fontSize(h3).text(
+                    `PERIODO: ${dateFormat(req.query.fechaIni)} al ${dateFormat(req.query.fechaFin)}`,
+                    orgX,
+                    cabeceraY + 25,
+                    {
+                        width: 300,
+                        align: "left",
+                    }
+                );
+            }
 
             let sumaIngreso = 0;
             let sumaEgreso = 0;
@@ -108,7 +130,7 @@ class RepFinanciero {
                 columnSpacing: 5,
                 columnsSize: [40, 132, 90, 90, 90, 90],
                 x: orgX,
-                y: doc.y + 10,
+                y: doc.y + 20,
                 width: doc.page.width - doc.options.margins.left - doc.options.margins.right
             });
 
@@ -241,15 +263,37 @@ class RepFinanciero {
                 }
             );
 
-            doc.fontSize(h3).text(
-                `PERIODO: ${dateFormat(req.query.fechaIni)} al ${dateFormat(req.query.fechaFin)}`,
-                orgX,
-                cabeceraY + 25,
-                {
-                    width: 300,
-                    align: "left",
-                }
-            );
+            if (sedeInfo.nombreProyecto) {
+                doc.fontSize(h3).text(
+                    `PROYECTO: ${sedeInfo.nombreProyecto}`,
+                    orgX,
+                    cabeceraY + 25,
+                    {
+                        width: 300,
+                        align: "left",
+                    }
+                );
+
+                doc.fontSize(h3).text(
+                    `PERIODO: ${dateFormat(req.query.fechaIni)} al ${dateFormat(req.query.fechaFin)}`,
+                    orgX + 200,
+                    cabeceraY + 25,
+                    {
+                        width: 300,
+                        align: "right",
+                    }
+                );
+            } else {
+                doc.fontSize(h3).text(
+                    `PERIODO: ${dateFormat(req.query.fechaIni)} al ${dateFormat(req.query.fechaFin)}`,
+                    orgX,
+                    cabeceraY + 25,
+                    {
+                        width: 300,
+                        align: "left",
+                    }
+                );
+            }
 
             let sumaMontoCobros = 0;
             let cobros = data.cobros.map((item, index) => {
@@ -291,7 +335,7 @@ class RepFinanciero {
                 columnSpacing: 5,
                 columnsSize: [22, 60, 80, 60, 60, 60, 70, 60, 60], //532
                 x: orgX,
-                y: doc.y + 10,
+                y: doc.y + 20,
                 width: doc.page.width - doc.options.margins.left - doc.options.margins.right
             });
 
