@@ -96,7 +96,7 @@ router.get('/repdetallebanco', async function (req, res) {
         return;
     }
 
-    const detalle = await banco.detalleBanco(req)
+    const detalle = await banco.detalleBancoReporte(req)
 
     if (typeof detalle === 'object') {
 

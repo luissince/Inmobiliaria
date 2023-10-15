@@ -1835,13 +1835,13 @@ class Cobro {
                     LEFT JOIN concepto AS cn ON gd.idConcepto = cn.idConcepto
                     LEFT JOIN proyecto AS p ON p.idProyecto = g.idProyecto
                     WHERE 
-                    g.fecha BETWEEN ? AND ? AND ? = ''
+                    g.fecha BETWEEN ? AND ? AND ? = '' AND ? = ''
                     OR
                     g.fecha BETWEEN ? AND ? AND u.idUsuario = ? AND ? = ''
                     OR 
-                    g.fecha BETWEEN ? AND ? AND ? = '' AND ? = g.idProyecto = ?
+                    g.fecha BETWEEN ? AND ? AND ? = '' AND g.idProyecto = ?
                     OR
-                    g.fecha BETWEEN ? AND ? AND u.idUsuario AND ? = g.idProyecto = ?
+                    g.fecha BETWEEN ? AND ? AND u.idUsuario = ? AND g.idProyecto = ?
                     GROUP BY g.idGasto
                     ORDER BY g.fecha DESC, g.hora DESC
                     `, [
