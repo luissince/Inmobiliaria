@@ -72,6 +72,7 @@ app.use(express.static(path.join(__dirname, "src/path/company")));
  * Cargar las rutas de la apis
  */
 app.use('/api/comprobante', require('./src/router/Comprobante'));
+app.use('/api/metodopago', require('./src/router/MetodoPago'));
 app.use('/api/moneda', require('./src/router/Moneda'));
 app.use('/api/banco', require('./src/router/Banco'));
 app.use('/api/sede', require('./src/router/Sede'));

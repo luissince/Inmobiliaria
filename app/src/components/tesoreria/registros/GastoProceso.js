@@ -32,6 +32,7 @@ class GastoProceso extends React.Component {
             cuentasBancarias: [],
             idMoneda: '',
             monedas: [],
+            metodosPago: [],
 
             idImpuesto: '',
             impuestos: [],
@@ -42,7 +43,7 @@ class GastoProceso extends React.Component {
             expandedOpciones: true,
 
             monto: '',
-            metodoPago: '',
+            codigoMetodoPago: '',
             observacion: '',
             idUsuario: this.props.token.userToken.idUsuario,
 
@@ -103,6 +104,10 @@ class GastoProceso extends React.Component {
                 signal: this.abortControllerView.signal,
             });
 
+            const metodoPago = await axios.get("/api/metodopago/listcombo", {
+                signal: this.abortControllerView.signal,
+            });
+
             const impuesto = await axios.get("/api/impuesto/listcombo", {
                 signal: this.abortControllerView.signal,
             });
@@ -124,6 +129,7 @@ class GastoProceso extends React.Component {
                 conceptos: concepto.data,
                 cuentasBancarias: cuentaBancaria.data,
                 monedas: moneda.data,
+                metodosPago: metodoPago.data,
 
                 idMoneda: monedaFilter.length > 0 ? monedaFilter[0].idMoneda : '',
                 idComprobante: comprobanteFilter.length > 0 ? comprobanteFilter[0].idComprobante : '',
@@ -281,7 +287,7 @@ class GastoProceso extends React.Component {
             return;
         }
 
-        if (this.state.metodoPago === "") {
+        if (this.state.codigoMetodoPago === "") {
             await this.setStateAsync({ messageWarning: "Seleccione el metodo de pago." })
             this.refMetodoPago.current.focus();
             return;
@@ -330,7 +336,7 @@ class GastoProceso extends React.Component {
                         "idBanco": this.state.idBanco,
                         "idMedida": this.state.idMedida,
                         "idImpuesto": this.state.idImpuesto,
-                        "metodoPago": this.state.metodoPago,
+                        "metodoPago": this.state.codigoMetodoPago,
                         "estado": 1,
                         "observacion": this.state.observacion.trim().toUpperCase(),
                         "idProyecto": this.state.idProyecto,
@@ -361,11 +367,12 @@ class GastoProceso extends React.Component {
             cliente: '',
 
             monedas: [],
+            metodosPago: [],
             idConcepto: '',
             conceptos: [],
             idBanco: '',
             cuentasBancarias: [],
-            metodoPago: '',
+            codigoMetodoPago: '',
             observacion: '',
             detalleConcepto: [],
 
@@ -797,29 +804,28 @@ class GastoProceso extends React.Component {
                                 <select
                                     title="Lista metodo de pago"
                                     className="form-control"
-                                    value={this.state.metodoPago}
+                                    value={this.state.codigoMetodoPago}
                                     ref={this.refMetodoPago}
                                     onChange={async (event) => {
                                         if (event.target.value.length > 0) {
                                             await this.setStateAsync({
-                                                metodoPago: event.target.value,
+                                                codigoMetodoPago: event.target.value,
                                                 messageWarning: '',
                                             });
                                         } else {
                                             await this.setStateAsync({
-                                                metodoPago: event.target.value,
+                                                codigoMetodoPago: event.target.value,
                                                 messageWarning: 'Seleccione el metodo de pago.',
                                             });
                                         }
                                     }}
                                 >
                                     <option value="">-- Metodo de pago --</option>
-                                    <option value="1">Efectivo</option>
-                                    <option value="2">Consignación</option>
-                                    <option value="3">Transferencia</option>
-                                    <option value="4">Cheque</option>
-                                    <option value="5">Tarjeta crédito</option>
-                                    <option value="6">Tarjeta débito</option>
+                                    {
+                                        this.state.metodosPago.map((item, index) => (
+                                            <option key={index} value={item.codigo}>{item.nombre}</option>
+                                        ))
+                                    }
                                 </select>
                             </div>
                         </div>

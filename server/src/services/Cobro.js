@@ -1128,7 +1128,7 @@ class Cobro {
             co.nombre as comprobante,
             c.serie,
             c.numeracion,
-            c.metodoPago,
+            mp.nombre AS metodoPago,
             c.estado,
             c.observacion,
             DATE_FORMAT(c.fecha,'%d/%m/%Y') as fecha,
@@ -1170,6 +1170,7 @@ class Cobro {
             LEFT JOIN comprobante AS cov ON vn.idComprobante = cov.idComprobante
 
             LEFT JOIN notaCredito AS nc ON nc.idCobro = c.idCobro AND nc.estado = 1
+            lEFT JOIN metodoPago AS mp ON mp.codigo = c.metodoPago
             WHERE c.idCobro = ?
             GROUP BY  c.idCobro`, [
                 req.query.idCobro

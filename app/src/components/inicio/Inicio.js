@@ -21,6 +21,7 @@ import Socios from '../facturacion/Socios';
 import Monedas from '../ajustes/Monedas';
 import Comprobantes from '../ajustes/Comprobantes';
 import Impuestos from '../ajustes/Impuestos';
+import Metodos from '../ajustes/MetodosPago';
 import Bancos from '../ajustes/Bancos';
 import BancoDetalle from '../ajustes/registros/BancoDetalle';
 import Sedes from '../ajustes/Sedes';
@@ -374,6 +375,10 @@ class Inicio extends React.Component {
                                 <Route
                                     path={`${path}/impuestos`}
                                     render={(props) => <Impuestos {...props} />}
+                                />
+                                <Route
+                                    path={`${path}/metodos`}
+                                    render={(props) => <Metodos {...props} />}
                                 />
                                 <Route
                                     path={`${path}/manzanas`}

@@ -237,7 +237,7 @@ class Gasto {
 
             b.nombre AS nombreBanco,
             b.tipoCuenta,
-            g.metodoPago,
+            mp.nombre AS metodoPago,
             g.estado,
             g.observacion,
             DATE_FORMAT(g.fecha,'%d/%m/%Y') as fecha,
@@ -253,6 +253,7 @@ class Gasto {
             INNER JOIN banco AS b ON g.idBanco = b.idBanco
             INNER JOIN comprobante AS co ON co.idComprobante = g.idComprobante
             LEFT JOIN gastoDetalle AS gd ON g.idGasto = gd.idGasto
+            lEFT JOIN metodoPago AS mp ON mp.codigo = g.metodoPago
             WHERE g.idGasto = ?
             GROUP BY g.idGasto`, [
                 req.query.idGasto

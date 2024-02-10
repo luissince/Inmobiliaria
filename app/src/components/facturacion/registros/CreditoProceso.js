@@ -35,6 +35,7 @@ class CreditoProceso extends React.Component {
             comprobantes: [],
             cobros: [],
             conceptos: [],
+            metodosPago: [],
 
             lotes: [],
             lote: '',
@@ -54,7 +55,7 @@ class CreditoProceso extends React.Component {
             expandedOpcionesPlazo: true,
             idBancoPlazo: '',
             idComprobantePlazo: '',
-            metodoPagoPlazo: '',
+            codigoMetodoPagoPlazo: '',
             observacionPlazo: '',
             plazosSumados: 0,
 
@@ -63,7 +64,7 @@ class CreditoProceso extends React.Component {
             expandedOpcionesCuota: true,
             idBancoCuota: '',
             idComprobanteCuota: '',
-            metodoPagoCuota: '',
+            codigoMetodoPagoCuota: '',
             observacionCuota: '',
             montoCuota: '',
 
@@ -72,7 +73,7 @@ class CreditoProceso extends React.Component {
             expandedOpcionesAdelanto: true,
             idBancoAdelanto: '',
             idComprobanteAdelanto: '',
-            metodoPagoAdelanto: '',
+            codigoMetodoPagoAdelanto: '',
             observacionAdelanto: '',
             montoAdelanto: '',
             idPlazo: '',
@@ -83,7 +84,7 @@ class CreditoProceso extends React.Component {
             idBancoCobro: '',
             idConceptoCobro: '',
             idComprobanteCobro: '',
-            metodoPagoCobro: '',
+            codigoMetodoPagoCobro: '',
             observacionCobro: '',
             montoCobro: '',
 
@@ -93,7 +94,7 @@ class CreditoProceso extends React.Component {
             idBancoIndividual: '',
             idConceptoIndividual: '',
             idComprobanteIndividual: '',
-            metodoPagoIndividual: '',
+            codigoMetodoPagoIndividual: '',
             observacionIndividual: '',
             montoIndividual: '',
 
@@ -184,7 +185,7 @@ class CreditoProceso extends React.Component {
             await this.setStateAsync({
                 idBancoPlazo: '',
                 idComprobantePlazo: '',
-                metodoPagoPlazo: '',
+                codigoMetodoPagoPlazo: '',
                 observacionPlazo: '',
                 plazosSumados: 0,
                 idMedidaPlazo: medidaFilter.length > 0 ? medidaFilter[0].idMedida : '',
@@ -211,7 +212,7 @@ class CreditoProceso extends React.Component {
             await this.setStateAsync({
                 idBancoCuota: '',
                 idComprobanteCuota: '',
-                metodoPagoCuota: '',
+                codigoMetodoPagoCuota: '',
                 observacionCuota: '',
                 montoCuota: '',
                 idMedidaCuota: medidaFilter.length > 0 ? medidaFilter[0].idMedida : '',
@@ -238,7 +239,7 @@ class CreditoProceso extends React.Component {
             await this.setStateAsync({
                 idBancoAdelanto: '',
                 idComprobanteAdelanto: '',
-                metodoPagoAdelanto: '',
+                codigoMetodoPagoAdelanto: '',
                 observacionAdelanto: '',
                 montoAdelanto: '',
                 idPlazo: '',
@@ -281,7 +282,7 @@ class CreditoProceso extends React.Component {
                 idConceptoCobro: '',
                 idBancoCobro: '',
                 idComprobanteCobro: '',
-                metodoPagoCobro: '',
+                codigoMetodoPagoCobro: '',
                 observacionCobro: '',
                 montoCobro: '',
                 idMedidaCobro: medidaFilter.length > 0 ? medidaFilter[0].idMedida : '',
@@ -309,7 +310,7 @@ class CreditoProceso extends React.Component {
                 idConceptoIndividual: '',
                 idBancoIndividual: '',
                 idComprobanteIndividual: '',
-                metodoPagoIndividual: '',
+                codigoMetodoPagoIndividual: '',
                 observacionIndividual: '',
                 montoIndividual: '',
                 idMedidaIndividual: medidaFilter.length > 0 ? medidaFilter[0].idMedida : '',
@@ -344,12 +345,13 @@ class CreditoProceso extends React.Component {
                 impuestos: [],
                 medidas: [],
                 conceptos: [],
+                metodosPago: [],
 
                 idImpuestoPlazo: '',
                 idMedidaPlazo: '',
                 expandedOpcionesPlazo: true,
                 idBancoPlazo: '',
-                metodoPagoPlazo: '',
+                codigoMetodoPagoPlazo: '',
                 observacionPlazo: '',
                 plazosSumados: 0,
 
@@ -358,7 +360,7 @@ class CreditoProceso extends React.Component {
                 expandedOpcionesCuota: true,
                 idBancoCuota: '',
                 idComprobanteCuota: '',
-                metodoPagoCuota: '',
+                codigoMetodoPagoCuota: '',
                 observacionCuota: '',
                 montoCuota: '',
 
@@ -367,7 +369,7 @@ class CreditoProceso extends React.Component {
                 expandedOpcionesAdelanto: true,
                 idBancoAdelanto: '',
                 idComprobanteAdelanto: '',
-                metodoPagoAdelanto: '',
+                codigoMetodoPagoAdelanto: '',
                 observacionAdelanto: '',
                 montoAdelanto: '',
                 idPlazo: '',
@@ -409,6 +411,10 @@ class CreditoProceso extends React.Component {
                 signal: this.abortControllerTable.signal,
             });
 
+            const metodoPago = await axios.get("/api/metodopago/listcombo", {
+                signal: this.abortControllerTable.signal,
+            });
+
             const plazosSelected = credito.data.plazos.map((item) => {
                 return {
                     ...item,
@@ -431,6 +437,7 @@ class CreditoProceso extends React.Component {
                 comprobantes: [...comprobante.data, ...facturado.data],
                 cobros: cobros.data,
                 conceptos: concepto.data,
+                metodosPago: metodoPago.data,
 
                 medidas: medida.data,
                 impuestos: impuesto.data,
@@ -510,8 +517,8 @@ class CreditoProceso extends React.Component {
             this.refBancoCuota.current.focus();
             return;
         }
-
-        if (this.state.metodoPagoCuota === '') {
+        
+        if (this.state.codigoMetodoPagoCuota === '') {
             this.refMetodoPagoCuota.current.focus();
             return;
         }
@@ -563,7 +570,7 @@ class CreditoProceso extends React.Component {
                         "idBanco": this.state.idBancoCuota,
                         "idVenta": this.state.venta.idVenta,
                         "idProyecto": this.state.idProyecto,
-                        "metodoPago": this.state.metodoPagoCuota,
+                        "metodoPago": this.state.codigoMetodoPagoCuota,
                         "estado": 1,
                         "observacion": this.state.observacionCuota.trim().toUpperCase(),
                         "montoCuota": this.state.montoCuota,
@@ -592,7 +599,7 @@ class CreditoProceso extends React.Component {
             return;
         }
 
-        if (this.state.metodoPagoPlazo === "") {
+        if (this.state.codigoMetodoPagoPlazo === "") {
             this.refMetodoPagoPlazo.current.focus();
             return;
         }
@@ -639,7 +646,7 @@ class CreditoProceso extends React.Component {
                         "idBanco": this.state.idBancoPlazo,
                         "idVenta": this.state.venta.idVenta,
                         "idProyecto": this.state.idProyecto,
-                        "metodoPago": this.state.metodoPagoPlazo,
+                        "metodoPago": this.state.codigoMetodoPagoPlazo,
                         "estado": 1,
                         "observacion": this.state.observacionPlazo.trim().toUpperCase(),
                         "plazosSumados": this.state.plazosSumados,
@@ -669,7 +676,7 @@ class CreditoProceso extends React.Component {
             return;
         }
 
-        if (this.state.metodoPagoAdelanto === '') {
+        if (this.state.codigoMetodoPagoAdelanto == '') {
             this.refMetodoPagoAdelanto.current.focus();
             return;
         }
@@ -722,7 +729,7 @@ class CreditoProceso extends React.Component {
                         "idBanco": this.state.idBancoAdelanto,
                         "idVenta": this.state.venta.idVenta,
                         "idProyecto": this.state.idProyecto,
-                        "metodoPago": this.state.metodoPagoAdelanto,
+                        "metodoPago": this.state.codigoMetodoPagoAdelanto,
                         "estado": 1,
                         "observacion": this.state.observacionAdelanto.trim().toUpperCase(),
                         "montoCuota": this.state.montoAdelanto,
@@ -948,7 +955,7 @@ class CreditoProceso extends React.Component {
             return;
         }
 
-        if (this.state.metodoPagoCobro === '') {
+        if (this.state.codigoMetodoPagoCobro === '') {
             this.refMetodoPagoCobro.current.focus();
             return;
         }
@@ -974,7 +981,7 @@ class CreditoProceso extends React.Component {
                         "idProcedencia": this.state.venta.idVenta,
                         "idMedida": this.state.idMedidaCobro,
                         "idImpuesto": this.state.idImpuestoCobro,
-                        "metodoPago": this.state.metodoPagoCobro,
+                        "metodoPago": this.state.codigoMetodoPagoCobro,
                         "estado": 1,
                         "observacion": this.state.observacionCobro.trim().toUpperCase(),
                         "idProyecto": this.state.idProyecto,
@@ -1084,7 +1091,7 @@ class CreditoProceso extends React.Component {
                         "idProcedencia": this.state.venta.idVenta,
                         "idMedida": this.state.idMedidaIndividual,
                         "idImpuesto": this.state.idImpuestoIndividual,
-                        "metodoPago": this.state.metodoPagoIndividual,
+                        "metodoPago": this.state.codigoMetodoPagoIndividual,
                         "estado": 1,
                         "observacion": this.state.observacionIndividual.trim().toUpperCase(),
                         "idProyecto": this.state.idProyecto,
@@ -1265,18 +1272,15 @@ class CreditoProceso extends React.Component {
                                         <select
                                             className="form-control"
                                             ref={this.refMetodoPagoPlazo}
-                                            value={this.state.metodoPagoPlazo}
+                                            value={this.state.codigoMetodoPagoPlazo}
                                             onChange={(event) =>
                                                 this.setState({
-                                                    metodoPagoPlazo: event.target.value,
+                                                    codigoMetodoPagoPlazo: event.target.value,
                                                 })}>
-                                            <option value="">- Seleccione -</option>
-                                            <option value="1">Efectivo</option>
-                                            <option value="2">Consignación</option>
-                                            <option value="3">Transferencia</option>
-                                            <option value="4">Cheque</option>
-                                            <option value="5">Tarjeta crédito</option>
-                                            <option value="6">Tarjeta débito</option>
+                                            <option value="">- Seleccione plazo xd-</option>
+                                            {this.state.metodosPago.map((item, index) => (
+                                                <option key={index} value={item.codigo}>{item.nombre}</option>
+                                            ))}
                                         </select>
                                     </div>
                                 </div>
@@ -1438,18 +1442,15 @@ class CreditoProceso extends React.Component {
                                         <select
                                             className="form-control"
                                             ref={this.refMetodoPagoCuota}
-                                            value={this.state.metodoPagoCuota}
+                                            value={this.state.codigoMetodoPagoCuota}
                                             onChange={(event) =>
                                                 this.setState({
-                                                    metodoPagoCuota: event.target.value,
+                                                    codigoMetodoPagoCuota: event.target.value,
                                                 })}>
                                             <option value="">- Seleccione -</option>
-                                            <option value="1">Efectivo</option>
-                                            <option value="2">Consignación</option>
-                                            <option value="3">Transferencia</option>
-                                            <option value="4">Cheque</option>
-                                            <option value="5">Tarjeta crédito</option>
-                                            <option value="6">Tarjeta débito</option>
+                                            {this.state.metodosPago.map((item, index) => (
+                                                <option key={index} value={item.codigo}>{item.nombre}</option>
+                                            ))}
                                         </select>
                                     </div>
                                 </div>
@@ -1616,18 +1617,15 @@ class CreditoProceso extends React.Component {
                                         <select
                                             className="form-control"
                                             ref={this.refMetodoPagoAdelanto}
-                                            value={this.state.metodoPagoAdelanto}
+                                            value={this.state.codigoMetodoPagoAdelanto}
                                             onChange={(event) =>
                                                 this.setState({
-                                                    metodoPagoAdelanto: event.target.value,
+                                                    codigoMetodoPagoAdelanto: event.target.value,
                                                 })}>
                                             <option value="">- Seleccione -</option>
-                                            <option value="1">Efectivo</option>
-                                            <option value="2">Consignación</option>
-                                            <option value="3">Transferencia</option>
-                                            <option value="4">Cheque</option>
-                                            <option value="5">Tarjeta crédito</option>
-                                            <option value="6">Tarjeta débito</option>
+                                            {this.state.metodosPago.map((item, index) => (
+                                                <option key={index} value={item.codigo}>{item.nombre}</option>
+                                            ))}
                                         </select>
                                     </div>
                                 </div>
@@ -1866,18 +1864,15 @@ class CreditoProceso extends React.Component {
                                         <select
                                             className="form-control"
                                             ref={this.refMetodoPagoCobro}
-                                            value={this.state.metodoPagoCobro}
+                                            value={this.state.codigoMetodoPagoCobro}
                                             onChange={(event) =>
                                                 this.setState({
-                                                    metodoPagoCobro: event.target.value,
+                                                    codigoMetodoPagoCobro: event.target.value,
                                                 })}>
                                             <option value="">- Seleccione -</option>
-                                            <option value="1">Efectivo</option>
-                                            <option value="2">Consignación</option>
-                                            <option value="3">Transferencia</option>
-                                            <option value="4">Cheque</option>
-                                            <option value="5">Tarjeta crédito</option>
-                                            <option value="6">Tarjeta débito</option>
+                                            {this.state.metodosPago.map((item, index) => (
+                                                <option key={index} value={item.codigo}>{item.nombre}</option>
+                                            ))}
                                         </select>
                                     </div>
                                 </div>
@@ -2069,18 +2064,15 @@ class CreditoProceso extends React.Component {
                                         <select
                                             className="form-control"
                                             ref={this.refMetodoPagoIndividual}
-                                            value={this.state.metodoPagoIndividual}
+                                            value={this.state.codigoMetodoPagoIndividual}
                                             onChange={(event) =>
                                                 this.setState({
-                                                    metodoPagoIndividual: event.target.value,
+                                                    codigoMetodoPagoIndividual: event.target.value,
                                                 })}>
                                             <option value="">- Seleccione -</option>
-                                            <option value="1">Efectivo</option>
-                                            <option value="2">Consignación</option>
-                                            <option value="3">Transferencia</option>
-                                            <option value="4">Cheque</option>
-                                            <option value="5">Tarjeta crédito</option>
-                                            <option value="6">Tarjeta débito</option>
+                                            {this.state.metodosPago.map((item, index) => (
+                                                <option key={index} value={item.codigo}>{item.nombre}</option>
+                                            ))}
                                         </select>
                                     </div>
                                 </div>

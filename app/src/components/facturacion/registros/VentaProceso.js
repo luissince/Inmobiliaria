@@ -38,6 +38,7 @@ class VentaProceso extends React.Component {
             estado: 1,
             idMoneda: '',
             monedas: [],
+            metodosPago: [],
 
             lotes: [],
             lote: '',
@@ -73,14 +74,14 @@ class VentaProceso extends React.Component {
 
             idComprobanteContado: '',
             idBancoContado: '',
-            metodoPagoContado: '',
+            codigoMetodoPagoContado: '',
             montoInicialCheck: false,
             inicial: '',
             idComprobanteCredito: '',
             idBancoCredito: '',
             monthPago: getCurrentMonth(),
             yearPago: getCurrentYear(),
-            metodoPagoCredito: '',
+            codigoMetodoPagoCredito: '',
             letraMensual: '',
             frecuenciaPagoCredito: new Date().getDate() > 15 ? '30' : '15',
 
@@ -89,7 +90,7 @@ class VentaProceso extends React.Component {
             idComprobanteCreditoVariable: '',
 
             idBancoCreditoVariable: '',
-            metodoPagoCreditoVariable: '',
+            codigoMetodoPagoCreditoVariable: '',
             frecuenciaPago: new Date().getDate() > 15 ? '30' : '15',
 
             mmonth: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
@@ -148,11 +149,11 @@ class VentaProceso extends React.Component {
             await this.setStateAsync({
                 selectTipoPago: 1,
                 idBancoContado: '',
-                metodoPagoContado: '',
+                codigoMetodoPagoContado: '',
                 montoInicialCheck: false,
                 inicial: '',
                 idBancoCredito: '',
-                metodoPagoCredito: '',
+                codigoMetodoPagoCredito: '',
                 letraMensual: '',
                 frecuenciaPagoCredito: new Date().getDate() > 15 ? '30' : '15',
                 numCuota: '',
@@ -161,7 +162,7 @@ class VentaProceso extends React.Component {
                 inicialCreditoVariable: '',
                 // idComprobanteCreditoVariable: '',
                 idBancoCreditoVariable: '',
-                metodoPagoCreditoVariable: '',
+                codigoMetodoPagoCreditoVariable: '',
                 frecuenciaPago: new Date().getDate() > 15 ? '30' : '15',
             });
         })
@@ -195,6 +196,10 @@ class VentaProceso extends React.Component {
                 signal: this.abortControllerView.signal,
             });
 
+            const metodoPago = await axios.get("/api/metodopago/listcombo", {
+                signal: this.abortControllerView.signal,
+            });
+
             const impuesto = await axios.get("/api/impuesto/listcombo", {
                 signal: this.abortControllerView.signal,
             });
@@ -217,6 +222,7 @@ class VentaProceso extends React.Component {
                 comprobantes: comprobanteLibre.data,
                 comprobantesCobro: [...facturadoCobro.data, ...comprobanteCobro.data],
                 monedas: moneda.data,
+                metodosPago: metodoPago.data,
 
                 medidas: medida.data,
                 impuestos: impuesto.data,
@@ -411,6 +417,7 @@ class VentaProceso extends React.Component {
             estado: 1,
             idMoneda: '',
             monedas: [],
+            metodosPago: [],
 
             lotes: [],
             lote: '',
@@ -444,14 +451,14 @@ class VentaProceso extends React.Component {
 
             idComprobanteContado: '',
             idBancoContado: '',
-            metodoPagoContado: '',
+            codigoMetodoPagoContado: '',
             montoInicialCheck: false,
             inicial: '',
             idComprobanteCredito: '',
             idBancoCredito: '',
             monthPago: getCurrentMonth(),
             yearPago: getCurrentYear(),
-            metodoPagoCredito: '',
+            codigoMetodoPagoCredito: '',
             letraMensual: '',
             frecuenciaPagoCredito: new Date().getDate() > 15 ? '30' : '15',
 
@@ -460,7 +467,7 @@ class VentaProceso extends React.Component {
             idComprobanteCreditoVariable: '',
 
             idBancoCreditoVariable: '',
-            metodoPagoCreditoVariable: '',
+            codigoMetodoPagoCreditoVariable: '',
             frecuenciaPago: new Date().getDate() > 15 ? '30' : '15',
         });
 
@@ -570,7 +577,7 @@ class VentaProceso extends React.Component {
                 this.refComprobanteContado.current.focus();
             } else if (this.state.idBancoContado === "") {
                 this.refBancoContado.current.focus();
-            } else if (this.state.metodoPagoContado === "") {
+            } else if (this.state.codigoMetodoPagoContado === "") {
                 this.refMetodoContado.current.focus();
             } else {
                 this.onSave(this.state.selectTipoPago)
@@ -586,7 +593,7 @@ class VentaProceso extends React.Component {
                 this.refComprobanteCredito.current.focus();
             } else if (this.state.montoInicialCheck && this.state.idBancoCredito === "") {
                 this.refBancoCredito.current.focus();
-            } else if (this.state.montoInicialCheck && this.state.metodoPagoCredito === "") {
+            } else if (this.state.montoInicialCheck && this.state.codigoMetodoPagoCredito === "") {
                 this.refMetodoCredito.current.focus();
             } else if (!isNumeric(this.state.numCuota)) {
                 this.refNumCutoas.current.focus();
@@ -611,7 +618,7 @@ class VentaProceso extends React.Component {
                 this.refComprobanteCreditoVariable.current.focus();
             } else if (this.state.inicialCreditoVariableCheck && this.state.idBancoCreditoVariable === "") {
                 this.refBancoCreditoVariable.current.focus();
-            } else if (this.state.inicialCreditoVariableCheck && this.state.metodoPagoCreditoVariable === "") {
+            } else if (this.state.inicialCreditoVariableCheck && this.state.codigoMetodoPagoCreditoVariable === "") {
                 this.refMetodoCreditoVariable.current.focus();
             } else if (this.state.frecuenciaPago === '') {
                 this.refFrecuenciaPago.current.focus();
@@ -660,10 +667,10 @@ class VentaProceso extends React.Component {
                                         : selectTipoPago === 3 && !this.state.inicialCreditoVariableCheck ? "" : "",
 
                         // "metodoPago": this.state.selectTipoPago ? this.state.metodoPagoContado : this.state.montoInicialCheck ? this.state.metodoPagoCredito : "",
-                        "metodoPago": selectTipoPago === 1 ? this.state.metodoPagoContado
-                            : selectTipoPago === 2 && this.state.montoInicialCheck ? this.state.metodoPagoCredito
+                        "metodoPago": selectTipoPago === 1 ? this.state.codigoMetodoPagoContado
+                            : selectTipoPago === 2 && this.state.montoInicialCheck ? this.state.codigoMetodoPagoCredito
                                 : selectTipoPago === 2 && !this.state.montoInicialCheck ? ""
-                                    : selectTipoPago === 3 && this.state.inicialCreditoVariableCheck ? this.state.metodoPagoCreditoVariable
+                                    : selectTipoPago === 3 && this.state.inicialCreditoVariableCheck ? this.state.codigoMetodoPagoCreditoVariable
                                         : selectTipoPago === 3 && !this.state.inicialCreditoVariableCheck ? "" : "",
 
                         // "inicial": this.state.selectTipoPago ? 0 : this.state.montoInicialCheck ? parseFloat(this.state.inicial) : 0,
@@ -947,15 +954,14 @@ class VentaProceso extends React.Component {
                                                                 title="Lista metodo de pago"
                                                                 className="form-control"
                                                                 ref={this.refMetodoContado}
-                                                                value={this.state.metodoPagoContado}
-                                                                onChange={(event) => this.setState({ metodoPagoContado: event.target.value })}>
+                                                                value={this.state.codigoMetodoPagoContado}
+                                                                onChange={(event) => this.setState({ codigoMetodoPagoContado: event.target.value })}>
                                                                 <option value="">-- Metodo de pago --</option>
-                                                                <option value="1">Efectivo</option>
-                                                                <option value="2">Consignación</option>
-                                                                <option value="3">Transferencia</option>
-                                                                <option value="4">Cheque</option>
-                                                                <option value="5">Tarjeta crédito</option>
-                                                                <option value="6">Tarjeta débito</option>
+                                                                {
+                                                                    this.state.metodosPago.map((item, index) => (
+                                                                        <option key={index} value={item.codigo}>{item.nombre}</option>
+                                                                    ))
+                                                                }
                                                             </select>
                                                         </div>
                                                     </div>
@@ -1070,15 +1076,14 @@ class VentaProceso extends React.Component {
                                                                     title="Lista metodo de pago"
                                                                     className="form-control"
                                                                     ref={this.refMetodoCredito}
-                                                                    value={this.state.metodoPagoCredito}
-                                                                    onChange={(event) => this.setState({ metodoPagoCredito: event.target.value })}>
+                                                                    value={this.state.codigoMetodoPagoCredito}
+                                                                    onChange={(event) => this.setState({ codigoMetodoPagoCredito: event.target.value })}>
                                                                     <option value="">-- Metodo de pago --</option>
-                                                                    <option value="1">Efectivo</option>
-                                                                    <option value="2">Consignación</option>
-                                                                    <option value="3">Transferencia</option>
-                                                                    <option value="4">Cheque</option>
-                                                                    <option value="5">Tarjeta crédito</option>
-                                                                    <option value="6">Tarjeta débito</option>
+                                                                    {
+                                                                        this.state.metodosPago.map((item, index) => (
+                                                                            <option key={index} value={item.codigo}>{item.nombre}</option>
+                                                                        ))
+                                                                    }
                                                                 </select>
                                                             </div>
                                                         </div>
@@ -1271,15 +1276,14 @@ class VentaProceso extends React.Component {
                                                                         title="Lista metodo de pago"
                                                                         className="form-control"
                                                                         ref={this.refMetodoCreditoVariable}
-                                                                        value={this.state.metodoPagoCreditoVariable}
-                                                                        onChange={(event) => this.setState({ metodoPagoCreditoVariable: event.target.value })}>
+                                                                        value={this.state.codigoMetodoPagoCreditoVariable}
+                                                                        onChange={(event) => this.setState({ codigoMetodoPagoCreditoVariable: event.target.value })}>
                                                                         <option value="">-- Metodo de pago --</option>
-                                                                        <option value="1">Efectivo</option>
-                                                                        <option value="2">Consignación</option>
-                                                                        <option value="3">Transferencia</option>
-                                                                        <option value="4">Cheque</option>
-                                                                        <option value="5">Tarjeta crédito</option>
-                                                                        <option value="6">Tarjeta débito</option>
+                                                                        {
+                                                                            this.state.metodosPago.map((item, index) => (
+                                                                                <option key={index} value={item.codigo}>{item.nombre}</option>
+                                                                            ))
+                                                                        }
                                                                     </select>
                                                                 </div>
                                                             </div>

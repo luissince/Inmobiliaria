@@ -77,12 +77,7 @@ class GastoDetalle extends React.Component {
                 fecha: cabecera.fecha + " " + timeForma24(cabecera.hora),
                 cuentaBancaria: cabecera.nombreBanco,
                 observacion: cabecera.observacion === "" ? "" : cabecera.observacion,
-                metodoPago: cabecera.metodoPago === 1 ? "Efectivo"
-                    : cabecera.metodoPago === 2 ? "Consignación"
-                        : cabecera.metodoPago === 3 ? "Transferencia"
-                            : cabecera.metodoPago === 4 ? "Cheque"
-                                : cabecera.metodoPago === 5 ? "Tarjeta crédito"
-                                    : "Tarjeta débito",
+                metodoPago: cabecera.metodoPago ,
                 total: formatMoney(cabecera.monto),
                 simbolo: cabecera.simbolo,
                 codiso: cabecera.codiso,
