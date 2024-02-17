@@ -16,6 +16,7 @@ import {
     keyUpSearch
 } from '../../helper/Tools';
 import { connect } from 'react-redux';
+import SearchBarManzana from "../../helper/SearchBarManzana";
 import Paginacion from '../../helper/Paginacion';
 
 class Lotes extends React.Component {
@@ -25,6 +26,8 @@ class Lotes extends React.Component {
             idLote: '',
             idManzana: '',
             manzanas: [],
+            manzanasCombo: [],
+            manzana: '',
             idConcepto: '',
             conceptos: [],
             descripcion: '',
@@ -44,6 +47,7 @@ class Lotes extends React.Component {
             limiteIzquierdo: '',
             limitePosterior: '',
             ubicacionLote: '',
+            nameLote: '',
             idProyecto: this.props.token.project.idProyecto,
             idUsuario: this.props.token.userToken.idUsuario,
 
@@ -150,19 +154,21 @@ class Lotes extends React.Component {
     loadInit = async () => {
         if (this.state.loading) return;
 
-        await this.setStateAsync({ paginacion: 1, restart: true });
-        this.fillTable(0, "");
+        await this.setStateAsync({ paginacion: 1, restart: true, manzana: "", nameLote: "" });
+        this.fillTable(0, "", "");
         await this.setStateAsync({ opcion: 0 });
+        this.refTxtSearch.current.value = ""
     }
 
-    async searchText(text) {
+    async searchText(lote) {
         if (this.state.loading) return;
 
-        if (text.trim().length === 0) return;
+        if (lote.trim().length === 0) return;
 
-        await this.setStateAsync({ paginacion: 1, restart: false });
-        this.fillTable(1, text.trim());
+        await this.setStateAsync({ paginacion: 1, restart: false, manzana: "" });
+        this.fillTable(1, lote.trim(), this.state.manzana);
         await this.setStateAsync({ opcion: 1 });
+        await this.setStateAsync({ nameLote: lote });
     }
 
     paginacionContext = async (listid) => {
@@ -173,16 +179,16 @@ class Lotes extends React.Component {
     onEventPaginacion = () => {
         switch (this.state.opcion) {
             case 0:
-                this.fillTable(0, "");
+                this.fillTable(0, "", "");
                 break;
             case 1:
-                this.fillTable(1, this.refTxtSearch.current.value);
+                this.fillTable(1, this.refTxtSearch.current.value, this.refManzana.current.value);
                 break;
-            default: this.fillTable(0, "");
+            default: this.fillTable(0, "", "");
         }
     }
 
-    fillTable = async (opcion, buscar) => {
+    fillTable = async (opcion, lote, manzana) => {
         try {
             await this.setStateAsync({ loading: true, lista: [], messageTable: "Cargando información...", messagePaginacion: "Mostranto 0 de 0 Páginas" });
 
@@ -190,7 +196,8 @@ class Lotes extends React.Component {
                 params: {
                     "idProyecto": this.state.idProyecto,
                     "opcion": opcion,
-                    "buscar": buscar.trim(),
+                    "buscar": lote.trim(),
+                    "manzana": manzana,
                     "posicionPagina": ((this.state.paginacion - 1) * this.state.filasPorPagina),
                     "filasPorPagina": this.state.filasPorPagina
                 }
@@ -283,7 +290,7 @@ class Lotes extends React.Component {
                     "idLote": id
                 }
             });
-            
+
             await this.setStateAsync({
                 idLote: result.data.idLote,
                 idManzana: result.data.idManzana,
@@ -467,6 +474,49 @@ class Lotes extends React.Component {
                 }
             }
         })
+    }
+
+    onEventClearInputManzana = async () => {
+        await this.setStateAsync({ manzanasCombo: [], idManzana: '', manzana: "" });
+
+        this.fillTable(1, this.state.nameLote, "");
+    }
+
+    onEventSelectItemManzana = async (value) => {
+        await this.setStateAsync({
+            manzanasCombo: [],
+            idManzana: value.idManzana,
+            manzana: value.nombre
+        });
+        
+        this.fillTable(1, this.state.nameLote, value.nombre);
+    }
+
+    handleFilterManzana = async (event) => {
+        const searchWord = event.target.value;
+        await this.setStateAsync({ idManzana: '', manzana: searchWord });
+        if (searchWord.length === 0) {
+            await this.setStateAsync({ manzanasCombo: [] });
+            return;
+        }
+
+        if (this.state.handleFilterManzana) return;
+
+        try {
+            await this.setStateAsync({ filterManzana: true });
+
+            let result = await axios.get("/api/manzana/listComboByLote", {
+                params: {
+                    idProyecto: this.state.idProyecto,
+                    buscar: searchWord,
+                    nameLote: this.state.nameLote
+                },
+            });
+
+            await this.setStateAsync({ filterManzana: false, manzanasCombo: result.data });
+        } catch (error) {
+            await this.setStateAsync({ filterManzana: false, manzanasCombo: [] });
+        }
     }
 
     render() {
@@ -840,7 +890,7 @@ class Lotes extends React.Component {
                 </div>
 
                 <div className="row">
-                    <div className="col-md-6 col-sm-12">
+                    <div className="col-md-4 col-sm-12">
                         <div className="form-group">
                             <div className="input-group mb-2">
                                 <div className="input-group-prepend">
@@ -856,7 +906,20 @@ class Lotes extends React.Component {
                             </div>
                         </div>
                     </div>
-                    <div className="col-md-6 col-sm-12">
+                    <div className="col-md-4 col-sm-12">
+                        <div className="form-group ">
+                            <SearchBarManzana
+                                placeholder="Filtrar manzana..."
+                                refManzana={this.refManzana}
+                                manzana={this.state.manzana}
+                                manzanas={this.state.manzanasCombo}
+                                onEventClearInput={this.onEventClearInputManzana}
+                                handleFilter={this.handleFilterManzana}
+                                onEventSelectItem={this.onEventSelectItemManzana}
+                            />
+                        </div>
+                    </div>
+                    <div className="col-md-4 col-sm-12">
                         <div className="form-group">
                             <button className="btn btn-outline-info" onClick={() => this.openModal('')} disabled={!this.state.add}>
                                 <i className="bi bi-file-plus"></i> Nuevo Registro

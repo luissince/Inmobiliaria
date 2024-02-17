@@ -300,6 +300,35 @@ class Manzana {
       return "Error interno de conexión, intente nuevamente.";
     }
   }
+
+  async listComboByLote(req) {
+    try {
+      
+      let lista = await conec.query(
+        `SELECT 
+            m.idManzana,
+            m.nombre
+            FROM manzana AS m 
+            INNER JOIN proyecto AS p ON m.idProyecto = p.idProyecto
+            INNER JOIN lote as l ON l.idManzana = m.idManzana
+            
+            WHERE
+            p.idProyecto = ? AND l.descripcion LIKE CONCAT(?,'%') and m.nombre LIKE CONCAT('%',?,'%')
+            
+            group by m.nombre
+            order by m.idManzana asc`,
+        [
+          req.query.idProyecto,
+          req.query.nameLote,
+          req.query.buscar
+        ]
+      );
+
+      return lista;
+    } catch (error) {
+      return "Error interno de conexión, intente nuevamente.";
+    }
+  }
 }
 
 module.exports = Manzana;

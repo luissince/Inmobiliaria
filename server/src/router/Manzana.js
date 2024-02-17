@@ -71,5 +71,13 @@ router.get('/traslado', async function(req, res){
     }
 })
 
+router.get("/listComboByLote", async function (req, res) {
+    const result = await manzana.listComboByLote(req)
+    if (typeof result === 'object') {
+        res.status(200).send(result)
+    } else {
+        res.status(500).send(result)
+    }
+});
 
 module.exports = router;
