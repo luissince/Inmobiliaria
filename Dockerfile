@@ -11,7 +11,7 @@ COPY . .
 RUN npm install
 
 # Compilar la aplcación web
-RUN npm build
+RUN npm run build
 
 # Establecer la imagen base para la etapa de producción
 FROM node:18-alpine AS production
