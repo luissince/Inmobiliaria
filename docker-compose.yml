@@ -1,0 +1,34 @@
+# Versión de la configuración de Docker Compose
+version: "3"
+
+# Definición de servicios
+services:
+  inmobiliaria-services:
+    # Configuración para construir la imagen del contenedor desde el contexto actual
+    build:
+      context: .
+      dockerfile: Dockerfile
+    # Nombre de la imagen de la imagen generada
+    image: inmobiliaria-image
+    # Nombre del contenedor
+    container_name: inmobiliaria
+    # Configuración para reiniciar siempre el contenedor
+    restart: always
+    # Configuración de redes
+    networks:
+      - luis
+    # Mapeo de puertos: Mapea el puerto 6001 del host al puerto 80 del contenedor
+    ports:
+      - 6502:80
+    volumes:
+      - inmobiliaria-volumen:/app/src/path
+
+# Definición de redes
+networks:
+  # Red llamada 'luis'
+  luis:
+    # Configuración para usar una red externa existente
+    external: true
+
+volumes:
+  inmobiliaria-volumen:
