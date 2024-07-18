@@ -1277,7 +1277,7 @@ class Factura {
             m.codiso,
             IFNULL(SUM(vd.precio*vd.cantidad),0) AS total,
             (
-                SELECT IFNULL(SUM(cv.precio),0) 
+                SELECT IFNULL(ROUND(SUM(cv.precio), 2),0) 
                 FROM cobro AS c 
                 LEFT JOIN notaCredito AS nc ON c.idCobro = nc.idCobro AND nc.estado = 1
                 LEFT JOIN cobroVenta AS cv ON c.idCobro = cv.idCobro 
@@ -1384,7 +1384,7 @@ class Factura {
             c.hora,
             c.observacion,
             mo.codiso,
-            sum(cv.precio) AS monto
+            ROUND(sum(cv.precio), 2) AS monto
             FROM cobro AS c          
             INNER JOIN banco AS bn ON bn.idBanco = c.idBanco
             INNER JOIN moneda AS mo ON mo.idMoneda = c.idMoneda
@@ -1433,7 +1433,7 @@ class Factura {
             m.codiso,
             IFNULL(SUM(vd.precio*vd.cantidad),0) AS total,
             (
-                SELECT IFNULL(SUM(cv.precio),0) 
+                SELECT IFNULL(ROUND(SUM(cv.precio), 2),0) 
                 FROM cobro AS c 
                 LEFT JOIN notaCredito AS nc ON c.idCobro = nc.idCobro AND nc.estado = 1
                 LEFT JOIN cobroVenta AS cv ON c.idCobro = cv.idCobro 
@@ -1491,7 +1491,7 @@ class Factura {
                 INNER JOIN venta AS v ON p.idVenta = v.idVenta
                 LEFT JOIN (
                     SELECT 
-                        SUM(cv.precio) AS precio, c.idCobro, cv.idPlazo
+                        ROUND(SUM(cv.precio), 2) AS precio, c.idCobro, cv.idPlazo
                         FROM cobro AS c
                         LEFT JOIN notaCredito AS nc ON nc.idCobro = c.idCobro AND nc.estado = 1
                         INNER JOIN cobroVenta AS cv ON cv.idCobro = c.idCobro                    
@@ -1530,7 +1530,7 @@ class Factura {
             c.hora,
             c.observacion,
             mo.codiso,
-            sum(cv.precio) AS monto
+            ROUND(sum(cv.precio), 2) AS monto
             FROM cobro AS c          
             INNER JOIN banco AS bn ON bn.idBanco = c.idBanco
             INNER JOIN moneda AS mo ON mo.idMoneda = c.idMoneda

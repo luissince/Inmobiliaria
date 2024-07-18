@@ -464,7 +464,7 @@ class Cliente {
             m.codiso,
             IFNULL(SUM(vd.precio*vd.cantidad),0) AS total,
             (
-             SELECT IFNULL(SUM(cv.precio),0) 
+             SELECT IFNULL(ROUND(SUM(cv.precio), 2),0) 
              FROM cobro AS c 
              LEFT JOIN notaCredito AS nc ON c.idCobro = nc.idCobro AND nc.estado = 1
              LEFT JOIN cobroVenta AS cv ON c.idCobro = cv.idCobro 
@@ -582,7 +582,7 @@ class Cliente {
                     c.hora,
                     c.estado,    
                     nc.idNotaCredito,    
-                    IFNULL(SUM(cd.precio*cd.cantidad),SUM(cv.precio)) AS monto
+                    IFNULL(SUM(cd.precio*cd.cantidad),ROUND(SUM(cv.precio), 2)) AS monto
                     FROM cobro AS c
                     INNER JOIN cliente AS cl ON c.idCliente = cl.idCliente
                     INNER JOIN banco AS b ON c.idBanco = b.idBanco

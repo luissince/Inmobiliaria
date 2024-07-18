@@ -43,7 +43,7 @@ class Cobro {
 
             nc.idNotaCredito,
 
-            IFNULL(SUM(cd.precio*cd.cantidad),SUM(cv.precio)) AS monto
+            IFNULL(SUM(cd.precio*cd.cantidad),ROUND(SUM(cv.precio), 2)) AS monto
             FROM cobro AS c
             INNER JOIN cliente AS cl ON c.idCliente = cl.idCliente
             INNER JOIN banco AS b ON c.idBanco = b.idBanco
@@ -358,7 +358,7 @@ class Cobro {
             ]);
 
             let cobrado = await conec.execute(connection, `SELECT 
-            IFNULL(SUM(cv.precio),0) AS total
+            IFNULL(ROUND(SUM(cv.precio), 2),0) AS total
             FROM cobro AS c 
             INNER JOIN cobroVenta AS cv ON c.idCobro = cv.idCobro
             LEFT JOIN notaCredito AS nc ON nc.idCobro = c.idCobro AND nc.estado = 1
@@ -566,7 +566,7 @@ class Cobro {
             ]);
 
             let cobrado = await conec.execute(connection, `SELECT 
-            IFNULL(SUM(cv.precio),0) AS total
+            IFNULL(ROUND(SUM(cv.precio), 2),0) AS total
             FROM cobro AS c 
             INNER JOIN cobroVenta AS cv ON c.idCobro = cv.idCobro
             LEFT JOIN notaCredito AS nc ON nc.idCobro = c.idCobro AND nc.estado = 1
@@ -890,7 +890,7 @@ class Cobro {
             ]);
 
             let cobradoPlazo = await conec.execute(connection, `SELECT 
-            FORMAT(IFNULL(SUM(cv.precio),0),2) AS total
+            FORMAT(IFNULL(ROUND(SUM(cv.precio), 2),0),2) AS total
             FROM cobro AS c 
             INNER JOIN cobroVenta AS cv ON c.idCobro = cv.idCobro
             LEFT JOIN notaCredito AS nc ON nc.idCobro = c.idCobro AND nc.estado = 1
@@ -920,7 +920,7 @@ class Cobro {
             ]);
 
             let cobrado = await conec.execute(connection, `SELECT 
-            IFNULL(SUM(cv.precio),0) AS total
+            IFNULL(ROUND(SUM(cv.precio), 2),0) AS total
             FROM cobro AS c 
             INNER JOIN cobroVenta AS cv ON c.idCobro = cv.idCobro
             LEFT JOIN notaCredito AS nc ON nc.idCobro = c.idCobro AND nc.estado = 1
@@ -1154,7 +1154,7 @@ class Cobro {
 
             CONCAT(us.nombres,' ',us.apellidos) AS usuario,            
     
-            IFNULL(SUM(cb.precio*cb.cantidad),SUM(cv.precio)) AS monto
+            IFNULL(SUM(cb.precio*cb.cantidad),ROUND(SUM(cv.precio), 2)) AS monto
     
             FROM cobro AS c
             INNER JOIN cliente AS cl ON c.idCliente = cl.idCliente
@@ -1221,7 +1221,7 @@ class Cobro {
                 DATE_FORMAT(pl.fecha,'%d/%m/%Y') as fecha,                
 
                 (SELECT IFNULL(SUM(vd.precio*vd.cantidad),0) FROM ventaDetalle AS vd WHERE vd.idVenta = v.idVenta ) AS total,
-                (SELECT IFNULL(SUM(cv.precio),0) FROM cobroVenta AS cv WHERE cv.idVenta = v.idVenta ) AS cobrado,
+                (SELECT IFNULL(ROUND(SUM(cv.precio), 2),0) FROM cobroVenta AS cv WHERE cv.idVenta = v.idVenta ) AS cobrado,
                 cv.precio
                 FROM cobroVenta AS cv
                 LEFT JOIN plazo AS pl ON pl.idPlazo = cv.idPlazo 
@@ -1442,7 +1442,7 @@ class Cobro {
                     ]);
 
                     const cobrado = await conec.execute(connection, `SELECT 
-                        IFNULL(SUM(cv.precio),0) AS total
+                        IFNULL(ROUND(SUM(cv.precio), 2),0) AS total
                         FROM cobro AS c 
                         INNER JOIN cobroVenta AS cv ON c.idCobro = cv.idCobro
                         LEFT JOIN notaCredito AS nc ON nc.idCobro = c.idCobro AND nc.estado = 1
@@ -1451,7 +1451,7 @@ class Cobro {
                     ]);
 
                     const actual = await conec.execute(connection, `SELECT 
-                        IFNULL(SUM(cv.precio),0) AS total
+                        IFNULL(ROUND(SUM(cv.precio), 2),0) AS total
                         FROM cobro AS c 
                         LEFT JOIN cobroVenta AS cv ON c.idCobro = cv.idCobro
                         WHERE c.idCobro = ?`, [
@@ -1607,7 +1607,7 @@ class Cobro {
                                     ]);
 
                                     const cobrado = await conec.execute(connection, `SELECT 
-                                        IFNULL(SUM(cv.precio),0) AS total
+                                        IFNULL(ROUND(SUM(cv.precio), 2),0) AS total
                                         FROM cobro AS c 
                                         INNER JOIN cobroVenta AS cv ON c.idCobro = cv.idCobro
                                         LEFT JOIN notaCredito AS nc ON nc.idCobro = c.idCobro AND nc.estado = 1
@@ -1616,7 +1616,7 @@ class Cobro {
                                     ]);
 
                                     const actual = await conec.execute(connection, `SELECT 
-                                        IFNULL(SUM(cv.precio),0) AS total
+                                        IFNULL(ROUND(SUM(cv.precio), 2),0) AS total
                                         FROM cobro AS c 
                                         LEFT JOIN cobroVenta AS cv ON c.idCobro = cv.idCobro
                                         WHERE c.idCobro = ?`, [
@@ -1725,7 +1725,7 @@ class Cobro {
                     c.hora,
                     nc.idNotaCredito,
                     c.estado,
-                    IFNULL(SUM(cd.precio*cd.cantidad),SUM(cv.precio)) AS monto,
+                    IFNULL(SUM(cd.precio*cd.cantidad),ROUND(SUM(cv.precio), 2)) AS monto,
                     u.nombres,
                     u.apellidos,
                     p.nombre AS nombreProyecto
@@ -1879,7 +1879,7 @@ class Cobro {
                     WHEN b.tipoCuenta = 1 THEN 'Banco'
                     WHEN b.tipoCuenta = 2 THEN 'Tarjeta'
                     ELSE 'Efectivo' END AS 'tipoCuenta',
-                    IFNULL(SUM(cd.precio*cd.cantidad),SUM(cv.precio)) AS monto,
+                    IFNULL(SUM(cd.precio*cd.cantidad),ROUND(SUM(cv.precio), 2)) AS monto,
                     p.nombre AS nombreProyecto
                     FROM cobro as c
                     LEFT JOIN banco AS b ON c.idBanco = b.idBanco

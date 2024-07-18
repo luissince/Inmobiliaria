@@ -606,7 +606,7 @@ class NotaCredito {
                      * Obtener el monto total de los cobros ligados a una venta
                      */
                     let cobrado = await conec.execute(connection, `SELECT 
-                    IFNULL(SUM(cv.precio),0) AS total
+                    IFNULL(ROUND(SUM(cv.precio), 2),0) AS total
                     FROM cobro AS c 
                     INNER JOIN cobroVenta AS cv ON c.idCobro = cv.idCobro
                     LEFT JOIN notaCredito AS nc ON nc.idCobro = c.idCobro
@@ -618,7 +618,7 @@ class NotaCredito {
                      * Obtener el valor actual del cobro a eliminar
                      */
                     let actual = await conec.execute(connection, `SELECT 
-                    IFNULL(SUM(cv.precio),0) AS total
+                    IFNULL(ROUND(SUM(cv.precio), 2),0) AS total
                     FROM cobro AS c 
                     LEFT JOIN cobroVenta AS cv ON c.idCobro = cv.idCobro
                     WHERE c.idCobro = ?`, [
