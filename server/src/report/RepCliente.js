@@ -369,6 +369,7 @@ class RepCliente {
 
     async repDeudas(req, sedeInfo, data) {
         try {
+            console.log(data)
             const doc = new PDFDocument({
                 font: 'Helvetica',
                 layout: 'landscape',
@@ -450,8 +451,13 @@ class RepCliente {
             const content = data.map((item, index) => {
                 return [
                     ++index,
-                    item.documento + " " + item.informacion,
-                    item.lote,
+                    item.documento,
+                    item.informacion,
+
+                    item.propiedad.map((prop, index) => {
+                        return `${prop.manzana}\n${prop.lote}`;
+                    }).join(', '),
+
                     item.nombre + "\n" + item.serie + "-" + item.numeracion,
                     numberFormat(item.cuotaMensual),
                     item.numCuota == 1 ? item.numCuota + " COUTA" : item.numCuota + " CUOTAS",
@@ -464,7 +470,7 @@ class RepCliente {
 
             const table = {
                 subtitle: "DETALLE",
-                headers: ["N°", "Cliente", "Propiedad", "Comprobante", "Cta mensual", "Cuotas Pendientes", "Sig. Pago", "Total", "Cobrado", "Por Cobrar"],
+                headers: ["N°", "documento", "Cliente", "Propiedad", "Comprobante", "Cta mensual", "Cuotas Pendientes", "Sig. Pago", "Total", "Cobrado", "Por Cobrar"],
                 rows: content
             };
 
@@ -482,7 +488,7 @@ class RepCliente {
                 align: "center",
                 padding: 5,
                 columnSpacing: 5,
-                columnsSize: [25, 130, 75, 90, 60, 70, 65, 70, 70, 65],//792-712
+                columnsSize: [25, 60, 80, 75, 85, 60, 70, 60, 70, 70, 65],//792-712
                 x: doc.x,
                 y: doc.y + 15,
                 width: doc.page.width - doc.options.margins.left - doc.options.margins.right
@@ -491,7 +497,7 @@ class RepCliente {
             doc.end();
             return getStream.buffer(doc);
         } catch (error) {
-            return "Se genero un error al generar el reporte.";
+            return "Se genero un error al generar el reporte."+ error;
         }
     }
 
@@ -595,7 +601,7 @@ class RepCliente {
                         [
                             venta.serie + "-" + venta.numeracion,
                             venta.fecha,
-                            venta.lote + " - " + venta.manzana,
+                            venta.manzana + " - " +  venta.lote,
                             venta.frecuencia,
                             numberFormat(venta.monto, venta.codiso),
                         ]

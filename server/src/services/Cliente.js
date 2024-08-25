@@ -503,19 +503,24 @@ class Cliente {
                     value.idVenta
                 ]);
 
-                const lote = detalle.map(item => {
-                    return item.lote + "\n" + item.manzana
-                });
+                // const lote = detalle.map(item => {
+                //     return item.lote + "\n" + item.manzana
+                // });
+
+                // newLista.push({
+                //     ...value,
+                //     lote: lote.join(", ")
+                // });
 
                 newLista.push({
                     ...value,
-                    lote: lote.join(", ")
+                    propiedad: detalle
                 });
             }
 
             return newLista;
         } catch (error) {
-            return "Se produjo un error de servidor, intente nuevamente.";
+            return "Se produjo un error de servidor, intente nuevamente xd."+ error;
         }
     }
 

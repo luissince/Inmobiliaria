@@ -209,9 +209,9 @@ class RepFinanciero {
             const doc = new PDFDocument({
                 margins: {
                     top: 40,
-                    bottom: 35,
-                    left: 33,
-                    right: 33
+                    bottom: 40,
+                    left: 40,
+                    right: 40
                 }
             });
             doc.info["Title"] = `REPORTE DE COBROS Y GASTOS DEL ${req.query.fechaIni} AL ${req.query.fechaFin}`
@@ -307,7 +307,7 @@ class RepFinanciero {
                     item.fechaPlazo == null ? item.fecha + "\n" + item.hora : item.fechaPlazo + "\n" + item.horaPlazo,
                     item.banco,
                     item.fecha + "\n" + item.hora,
-                    item.nombres,
+                    // item.nombres,
                     item.estado == 1 && item.idNotaCredito == null ? numberFormat(item.monto) : 0,
                     item.estado == 1 && item.idNotaCredito == null ? 0 : numberFormat(item.monto)
                 ]
@@ -318,17 +318,18 @@ class RepFinanciero {
             //Tabla
             const tableCobros = {
                 subtitle: "RESUMEN DE COBROS",
-                headers: ["#", "Correlativo", "Cliente", "Detalle", "Fecha Contrato", "Banco", "Fecha Pago", "Usuario", "Monto", "Anulado"],
+                headers: ["#", "Correlativo", "Cliente", "Detalle", "Fecha Contrato", "Banco", "Fecha Pago", "Monto", "Anulado"],
                 rows: cobros
             };
+
 
             doc.table(tableCobros, {
                 prepareHeader: () => doc.font("Helvetica-Bold").fontSize(h3),
                 prepareRow: (row, indexColumn, indexRow, rectRow, rectCell) => {
                     if (indexColumn === 3) {
                         doc.font("Helvetica").fontSize(h5);
-                    } else if (indexColumn === 8) {
-                        if (row[8] == "0") {
+                    } else if (indexColumn === 7) {
+                        if (row[7] == "0") {
                             doc.font("Helvetica").fontSize(h4).fillColor("red");
                         }
                     } else {
@@ -337,11 +338,34 @@ class RepFinanciero {
                 },
                 padding: 5,
                 columnSpacing: 5,
-                columnsSize: [25, 60, 80, 60, 55, 40, 55, 60, 60, 50], //532
+                columnsSize: [25, 60, 127, 60, 55, 40, 55, 60, 50], //532
                 x: orgX,
                 y: doc.y + 20,
-                width: doc.page.width - doc.options.margins.left - doc.options.margins.right
+                width: doc.page.width - doc.options.margins.left - doc.options.margins.right,
+                onRow: (row, indexRow) => {
+                    const rowHeight = doc.heightOfString(row.join(''), { font: 'Helvetica', fontSize: h4 });
+                    if (doc.y + rowHeight > doc.page.height - doc.options.margins.bottom) {
+                        doc.addPage();
+                        doc.y = doc.options.margins.top;
+                    }
+                },
+                autoPageBreak: {
+                    margin: 20, // margen inferior para la página actual
+                    keepWithHeader: true
+                }
             });
+
+            // Espacio adicional después de la primera tabla
+            doc.moveDown(2); // Mover un poco más hacia abajo
+
+            // Verificar si la siguiente tabla cabe en la página actual
+            const availableHeight = doc.page.height - doc.y - doc.page.margins.bottom;
+            const requiredHeight = 200; // Estimar la altura requerida por la tabla de gastos
+
+            if (requiredHeight > availableHeight) {
+                // Si la altura requerida es mayor que la disponible, crear una nueva página
+                doc.addPage();
+            }
 
             let sumaMontoGastos = 0;
             let gastos = data.gastos.map((item, index) => {
@@ -367,6 +391,7 @@ class RepFinanciero {
                 rows: gastos
             };
 
+            // Renderizar la tabla de gastos
             doc.table(tableGastos, {
                 prepareHeader: () => doc.font("Helvetica-Bold").fontSize(h3),
                 prepareRow: () => {
@@ -376,7 +401,7 @@ class RepFinanciero {
                 columnSpacing: 5,
                 columnsSize: [22, 80, 100, 80, 60, 60, 70, 60], //532
                 x: orgX,
-                y: doc.y + 10,
+                y: doc.y + 30, // Posicionar en el y actual, que será al inicio si hay una nueva página
                 width: doc.page.width - doc.options.margins.left - doc.options.margins.right
             });
 

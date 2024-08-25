@@ -316,6 +316,16 @@ async function generateExcelDeudas(req, sedeInfo, data) {
             },
         });
 
+        const subtitle = wb.createStyle({
+            alignment: {
+                horizontal: 'center'
+            },
+            font: {
+                color: '#000000',
+                size: 12,
+            },
+        });
+
         const styleHeader = wb.createStyle({
             alignment: {
                 horizontal: 'left'
@@ -370,42 +380,53 @@ async function generateExcelDeudas(req, sedeInfo, data) {
         });
 
         ws.column(1).setWidth(10);
-        ws.column(2).setWidth(20);
-        ws.column(3).setWidth(25);
-        ws.column(4).setWidth(20);
+        ws.column(2).setWidth(10);
+        ws.column(3).setWidth(20);
+        ws.column(4).setWidth(25);
         ws.column(5).setWidth(20);
         ws.column(6).setWidth(20);
         ws.column(7).setWidth(20);
         ws.column(8).setWidth(20);
         ws.column(9).setWidth(20);
         ws.column(10).setWidth(20);
+        ws.column(11).setWidth(20);
 
-        ws.cell(1, 1, 1, 10, true).string(`${sedeInfo.nombreEmpresa}`).style(styleTitle);
-        ws.cell(2, 1, 2, 10, true).string(`RUC: ${sedeInfo.ruc}`).style(styleTitle);
-        ws.cell(3, 1, 3, 10, true).string(`${sedeInfo.direccion}`).style(styleTitle);
-        ws.cell(4, 1, 4, 10, true).string(`Celular: ${sedeInfo.celular} / Telefono: ${sedeInfo.telefono}`).style(styleTitle);
+        ws.cell(1, 1, 1, 11, true).string(`${sedeInfo.nombreEmpresa}`).style(styleTitle);
+        ws.cell(2, 1, 2, 11, true).string(`RUC: ${sedeInfo.ruc}`).style(styleTitle);
+        ws.cell(3, 1, 3, 11, true).string(`${sedeInfo.direccion}`).style(styleTitle);
+        ws.cell(4, 1, 4, 11, true).string(`Celular: ${sedeInfo.celular} / Telefono: ${sedeInfo.telefono}`).style(styleTitle);
 
-        ws.cell(6, 1, 6, 10, true).string(`LISTA DE DEUDAS POR CLIENTE`).style(styleTitle);
+        ws.cell(6, 1, 6, 11, true).string(`LISTA DE DEUDAS POR CLIENTE`).style(styleTitle);
 
-        const header = ["N°", "Cliente", "Propiedad", "Comprobante", "Cuota Mensual", "Cuotas Pendientes", "Sig. Pago", "Total", "Cobrado", "Por Cobrar"];
-        header.map((item, index) => ws.cell(8, 1 + index).string(item).style(styleTableHeader));
+        ws.cell(8, 1, 8, 6, true).string(`PROYECTO: ${req.query.nombreProyecto}`).style(subtitle);
+        ws.cell(8, 7, 8, 11, true).string(`${req.query.seleccionado ? "TODAS LA FECHAS" : req.query.frecuencia == 15 ? "FRECUENTA CADA 15 DEL MES" : "FRECUENTA CADA 30 DEL MES"}`).style(subtitle);
 
-        let rowY = 8;
+        const header = ["N°", "Documento", "Cliente", "Propiedad", "Comprobante", "Cuota Mensual", "Cuotas Pendientes", "Sig. Pago", "Total", "Cobrado", "Por Cobrar"];
+        header.map((item, index) => ws.cell(10, 1 + index).string(item).style(styleTableHeader));
+
+        let rowY = 10;
 
         data.map((item, index) => {
             rowY = rowY + 1;
 
             ws.cell(rowY, 1).number(1 + index).style(styleBodyInteger)
-            ws.cell(rowY, 2).string(item.documento + "\n" + item.informacion).style(styleBody)
-            ws.cell(rowY, 3).string(item.lote).style(styleBody)
-            ws.cell(rowY, 4).string(item.nombre + "\n" + item.serie + "-" + item.numeracion).style(styleBody)
-            ws.cell(rowY, 5).number(parseFloat(formatMoney(item.cuotaMensual))).style(styleBodyFloat)
-            ws.cell(rowY, 6).string(item.numCuota == 1 ? item.numCuota + " CUOTA" : item.numCuota + " CUOTAS").style(styleBody)
-            ws.cell(rowY, 7).string(dateFormat(item.fechaPago)).style(styleBody)
+            ws.cell(rowY, 2).string(item.documento).style(styleBody)
+            ws.cell(rowY, 3).string(item.informacion).style(styleBody)
+            
+            ws.cell(rowY, 4).string(
+                item.propiedad.map((prop) => {
+                    return prop.manzana + " " + prop.lote;
+                }).join(', ')
+            ).style(styleBody);
 
-            ws.cell(rowY, 8).number(parseFloat(formatMoney(item.total))).style(styleBodyFloat)
-            ws.cell(rowY, 9).number(parseFloat(formatMoney(item.cobrado))).style(styleBodyFloat)
-            ws.cell(rowY, 10).number(parseFloat(formatMoney(item.total - item.cobrado))).style(styleBodyFloat)
+            ws.cell(rowY, 5).string(item.nombre + "\n" + item.serie + "-" + item.numeracion).style(styleBody)
+            ws.cell(rowY, 6).number(parseFloat(formatMoney(item.cuotaMensual))).style(styleBodyFloat)
+            ws.cell(rowY, 7).string(item.numCuota == 1 ? item.numCuota + " CUOTA" : item.numCuota + " CUOTAS").style(styleBody)
+            ws.cell(rowY, 8).string(dateFormat(item.fechaPago)).style(styleBody)
+
+            ws.cell(rowY, 9).number(parseFloat(formatMoney(item.total))).style(styleBodyFloat)
+            ws.cell(rowY, 10).number(parseFloat(formatMoney(item.cobrado))).style(styleBodyFloat)
+            ws.cell(rowY, 11).number(parseFloat(formatMoney(item.total - item.cobrado))).style(styleBodyFloat)
         });
         rowY = rowY + 1;
 
@@ -547,7 +568,7 @@ async function generarSociosPorFecha(req, sedeInfo, data) {
                 rowY = rowY + 1;
                 ws.cell(rowY, 1).string(venta.serie + "-" + venta.numeracion).style(styleBody).style(textSize);
                 ws.cell(rowY, 2).string(venta.fecha).style(styleBody).style(textSize);
-                ws.cell(rowY, 3).string(venta.lote + " - " + venta.manzana).style(styleBody).style(textSize);
+                ws.cell(rowY, 3).string(venta.manzana + " - " + venta.lote).style(styleBody).style(textSize);
                 ws.cell(rowY, 4).string(venta.frecuencia).style(styleBody).style(textSize);
                 ws.cell(rowY, 5).number(parseFloat(formatMoney(venta.monto))).style(styleBodyFloat).style(textSize)
             }
