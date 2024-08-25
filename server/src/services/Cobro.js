@@ -1706,110 +1706,423 @@ class Cobro {
         try {
             if (req.query.isDetallado) {
 
-                const cobros = await conec.query(`SELECT 
-                    c.idCobro, 
-                    co.nombre as comprobante,
-                    c.serie,
-                    c.numeracion,
-                    cl.documento,
-                    cl.informacion,  
-                    CASE 
-                    WHEN cn.idConcepto IS NOT NULL THEN cn.nombre
-                    ELSE CASE WHEN cv.idPlazo = 0 THEN 'CUOTA INICIAL' ELSE CONCAT('CUOTA',' ',pl.cuota) END END AS detalle,
-                    IFNULL(CONCAT(cp.nombre,' ',v.serie,'-',v.numeracion),'') AS comprobanteRef,
-                    m.simbolo,
-                    m.codiso,
-                    b.nombre as banco,  
-                    c.observacion, 
-                    DATE_FORMAT(c.fecha,'%d/%m/%Y') as fecha, 
-                    c.hora,
-                    nc.idNotaCredito,
-                    c.estado,
-                    IFNULL(SUM(cd.precio*cd.cantidad),ROUND(SUM(cv.precio), 2)) AS monto,
-                    u.nombres,
-                    u.apellidos,
-                    p.nombre AS nombreProyecto
-                    FROM cobro AS c
-                    INNER JOIN cliente AS cl ON c.idCliente = cl.idCliente
-                    INNER JOIN banco AS b ON c.idBanco = b.idBanco
-                    INNER JOIN moneda AS m ON c.idMoneda = m.idMoneda 
-                    INNER JOIN comprobante AS co ON co.idComprobante = c.idComprobante
-                    LEFT JOIN cobroDetalle AS cd ON c.idCobro = cd.idCobro
-                    LEFT JOIN concepto AS cn ON cd.idConcepto = cn.idConcepto 
-                    LEFT JOIN cobroVenta AS cv ON cv.idCobro = c.idCobro 
-                    LEFT JOIN plazo AS pl ON pl.idPlazo = cv.idPlazo
-                    LEFT JOIN venta AS v ON cv.idVenta = v.idVenta 
-                    LEFT JOIN comprobante AS cp ON v.idComprobante = cp.idComprobante
-                    LEFT JOIN usuario AS u ON u.idUsuario = c.idUsuario
-                    LEFT JOIN proyecto AS p ON p.idProyecto = c.idProyecto
-                    LEFT JOIN notaCredito AS nc ON nc.idCobro = c.idCobro AND nc.estado = 1
-                    WHERE 
-                    c.fecha BETWEEN ? AND ? AND ? = '' AND ? = '' AND ? = ''
-                    OR
-                    c.fecha BETWEEN ? AND ? AND ? = '' AND u.idUsuario = ? AND ? = ''
-                    OR
-                    c.fecha BETWEEN ? AND ? AND co.idComprobante = ? AND ? = '' AND ? = ''
-                    OR
-                    c.fecha BETWEEN ? AND ? AND ? = '' AND ? = '' AND c.idProyecto = ?
-                    OR
-                    c.fecha BETWEEN ? AND ? AND co.idComprobante = ? AND u.idUsuario = ? AND ? = ''
-                    OR
-                    c.fecha BETWEEN ? AND ? AND ? = '' AND u.idUsuario = ? AND c.idProyecto = ?
-                    OR
-                    c.fecha BETWEEN ? AND ? AND co.idComprobante = ? AND ? = '' AND c.idProyecto = ?
-                    OR
-                    c.fecha BETWEEN ? AND ? AND co.idComprobante = ? AND u.idUsuario = ? AND c.idProyecto = ?
-                    GROUP BY c.idCobro
-                    ORDER BY c.fecha DESC,c.hora DESC
-                    `, [
-                    req.query.fechaIni,
-                    req.query.fechaFin,
-                    req.query.idComprobante,
-                    req.query.idUsuario,
-                    req.query.idProyecto,
+                let cobros
+                console.log(req.query)
+                if (req.query.includeLatePayments) {
+                    cobros = await conec.query(`SELECT 
+                        c.idCobro, 
+                        co.nombre as comprobante,
+                        c.serie,
+                        c.numeracion,
+                        cl.documento,
+                        cl.informacion,  
+                        CASE 
+                        WHEN cn.idConcepto IS NOT NULL THEN cn.nombre
+                        ELSE CASE WHEN cv.idPlazo = 0 THEN 'CUOTA INICIAL' ELSE CONCAT('CUOTA',' ',pl.cuota) END END AS detalle,
+                        IFNULL(CONCAT(cp.nombre,' ',v.serie,'-',v.numeracion),'') AS comprobanteRef,
+                        m.simbolo,
+                        m.codiso,
+                        b.nombre as banco,  
+                        c.observacion, 
+                        DATE_FORMAT(c.fecha,'%d/%m/%Y') as fecha, 
+                        c.hora,
+                        nc.idNotaCredito,
+                        c.estado,
+                        IFNULL(SUM(cd.precio*cd.cantidad),ROUND(SUM(cv.precio), 2)) AS monto,
+                        u.nombres,
+                        u.apellidos,
+                        p.nombre AS nombreProyecto,
+                        DATE_FORMAT(pl.fecha,'%d/%m/%Y') AS fechaPlazo,
+                        pl.hora AS horaPlazo
+                        FROM cobro AS c
+                        INNER JOIN cliente AS cl ON c.idCliente = cl.idCliente
+                        INNER JOIN banco AS b ON c.idBanco = b.idBanco
+                        INNER JOIN moneda AS m ON c.idMoneda = m.idMoneda 
+                        INNER JOIN comprobante AS co ON co.idComprobante = c.idComprobante
+                        LEFT JOIN cobroDetalle AS cd ON c.idCobro = cd.idCobro
+                        LEFT JOIN concepto AS cn ON cd.idConcepto = cn.idConcepto 
+                        LEFT JOIN cobroVenta AS cv ON cv.idCobro = c.idCobro 
+                        LEFT JOIN plazo AS pl ON pl.idPlazo = cv.idPlazo
+                        LEFT JOIN venta AS v ON cv.idVenta = v.idVenta 
+                        LEFT JOIN comprobante AS cp ON v.idComprobante = cp.idComprobante
+                        LEFT JOIN usuario AS u ON u.idUsuario = c.idUsuario
+                        LEFT JOIN proyecto AS p ON p.idProyecto = c.idProyecto
+                        LEFT JOIN notaCredito AS nc ON nc.idCobro = c.idCobro AND nc.estado = 1
+                        WHERE 
+                        (c.fecha BETWEEN ? AND ?) AND ? = '' AND ? = '' AND ? = '' AND ? = ''
+                        OR
+                        c.fecha BETWEEN ? AND ? AND co.idComprobante = ? AND ? = '' AND ? = '' AND ? = ''
+                        OR
+                        c.fecha BETWEEN ? AND ? AND ? = '' AND u.idUsuario = ? AND ? = '' AND ? = ''
+                        OR
+                        c.fecha BETWEEN ? AND ? AND ? = '' AND ? = '' AND c.idProyecto = ? AND ? = ''
+                        OR
+                        c.fecha BETWEEN ? AND ? AND ? = '' AND ? = '' AND ? = '' AND b.idBanco = ?
+                        
+                        OR
+                        c.fecha BETWEEN ? AND ? AND co.idComprobante = ? AND u.idUsuario = ? AND ? = '' AND ? = ''
+                        OR 
+                        c.fecha BETWEEN ? AND ? AND co.idComprobante = ? AND ? = '' AND c.idProyecto = ? AND ? = ''
+                        OR 
+                        c.fecha BETWEEN ? AND ? AND co.idComprobante = ? AND ? = '' AND ? = '' AND b.idBanco = ?
 
-                    req.query.fechaIni,
-                    req.query.fechaFin,
-                    req.query.idComprobante,
-                    req.query.idUsuario,
-                    req.query.idProyecto,
+                        OR
+                        c.fecha BETWEEN ? AND ? AND ? = '' AND u.idUsuario = ? AND c.idProyecto = ? AND ? = ''
+                        OR
+                        c.fecha BETWEEN ? AND ? AND ? = '' AND u.idUsuario = ? AND ? = '' AND b.idBanco = ?
 
-                    req.query.fechaIni,
-                    req.query.fechaFin,
-                    req.query.idComprobante,
-                    req.query.idUsuario,
-                    req.query.idProyecto,
+                        OR
+                        c.fecha BETWEEN ? AND ? AND ? = '' AND ? = '' AND c.idProyecto = ? AND b.idBanco = ?
 
-                    req.query.fechaIni,
-                    req.query.fechaFin,
-                    req.query.idComprobante,
-                    req.query.idUsuario,
-                    req.query.idProyecto,
+                        OR
+                        c.fecha BETWEEN ? AND ? AND ? = '' AND u.idUsuario = ? AND c.idProyecto = ? AND b.idBanco = ?
+                        OR
+                        c.fecha BETWEEN ? AND ? AND co.idComprobante = ? AND ? = '' AND c.idProyecto = ? AND b.idBanco = ?
+                        OR
+                        c.fecha BETWEEN ? AND ? AND co.idComprobante = ? AND u.idUsuario = ? AND ? = '' AND b.idBanco = ?
+                        OR
+                        c.fecha BETWEEN ? AND ? AND co.idComprobante = ? AND u.idUsuario = ? AND c.idProyecto = ? AND ? = ''
 
-                    req.query.fechaIni,
-                    req.query.fechaFin,
-                    req.query.idComprobante,
-                    req.query.idUsuario,
-                    req.query.idProyecto,
+                        OR
+                        c.fecha BETWEEN ? AND ? AND co.idComprobante = ? AND u.idUsuario = ? AND c.idProyecto = ? AND b.idBanco = ?
+                        GROUP BY c.idCobro
+                        ORDER BY c.fecha DESC,c.hora DESC
+                        `, [
+                        req.query.fechaIni,
+                        req.query.fechaFin,
+                        req.query.idComprobante,
+                        req.query.idUsuario,
+                        req.query.idProyecto,
+                        req.query.idBanco,
 
-                    req.query.fechaIni,
-                    req.query.fechaFin,
-                    req.query.idComprobante,
-                    req.query.idUsuario,
-                    req.query.idProyecto,
+                        req.query.fechaIni,
+                        req.query.fechaFin,
+                        req.query.idComprobante,
+                        req.query.idUsuario,
+                        req.query.idProyecto,
+                        req.query.idBanco,
 
-                    req.query.fechaIni,
-                    req.query.fechaFin,
-                    req.query.idComprobante,
-                    req.query.idUsuario,
-                    req.query.idProyecto,
+                        req.query.fechaIni,
+                        req.query.fechaFin,
+                        req.query.idComprobante,
+                        req.query.idUsuario,
+                        req.query.idProyecto,
+                        req.query.idBanco,
 
-                    req.query.fechaIni,
-                    req.query.fechaFin,
-                    req.query.idComprobante,
-                    req.query.idUsuario,
-                    req.query.idProyecto,
-                ]);
+                        req.query.fechaIni,
+                        req.query.fechaFin,
+                        req.query.idComprobante,
+                        req.query.idUsuario,
+                        req.query.idProyecto,
+                        req.query.idBanco,
+
+                        req.query.fechaIni,
+                        req.query.fechaFin,
+                        req.query.idComprobante,
+                        req.query.idUsuario,
+                        req.query.idProyecto,
+                        req.query.idBanco,
+
+                        req.query.fechaIni,
+                        req.query.fechaFin,
+                        req.query.idComprobante,
+                        req.query.idUsuario,
+                        req.query.idProyecto,
+                        req.query.idBanco,
+
+                        req.query.fechaIni,
+                        req.query.fechaFin,
+                        req.query.idComprobante,
+                        req.query.idUsuario,
+                        req.query.idProyecto,
+                        req.query.idBanco,
+
+                        req.query.fechaIni,
+                        req.query.fechaFin,
+                        req.query.idComprobante,
+                        req.query.idUsuario,
+                        req.query.idProyecto,
+                        req.query.idBanco,
+
+                        req.query.fechaIni,
+                        req.query.fechaFin,
+                        req.query.idComprobante,
+                        req.query.idUsuario,
+                        req.query.idProyecto,
+                        req.query.idBanco,
+
+                        req.query.fechaIni,
+                        req.query.fechaFin,
+                        req.query.idComprobante,
+                        req.query.idUsuario,
+                        req.query.idProyecto,
+                        req.query.idBanco,
+
+                        req.query.fechaIni,
+                        req.query.fechaFin,
+                        req.query.idComprobante,
+                        req.query.idUsuario,
+                        req.query.idProyecto,
+                        req.query.idBanco,
+
+                        req.query.fechaIni,
+                        req.query.fechaFin,
+                        req.query.idComprobante,
+                        req.query.idUsuario,
+                        req.query.idProyecto,
+                        req.query.idBanco,
+
+                        req.query.fechaIni,
+                        req.query.fechaFin,
+                        req.query.idComprobante,
+                        req.query.idUsuario,
+                        req.query.idProyecto,
+                        req.query.idBanco,
+
+                        req.query.fechaIni,
+                        req.query.fechaFin,
+                        req.query.idComprobante,
+                        req.query.idUsuario,
+                        req.query.idProyecto,
+                        req.query.idBanco,
+
+                        req.query.fechaIni,
+                        req.query.fechaFin,
+                        req.query.idComprobante,
+                        req.query.idUsuario,
+                        req.query.idProyecto,
+                        req.query.idBanco,
+
+                        req.query.fechaIni,
+                        req.query.fechaFin,
+                        req.query.idComprobante,
+                        req.query.idUsuario,
+                        req.query.idProyecto,
+                        req.query.idBanco,
+                    ]);
+                } else {
+                    cobros = await conec.query(`SELECT 
+                        c.idCobro, 
+                        co.nombre as comprobante,
+                        c.serie,
+                        c.numeracion,
+                        cl.documento,
+                        cl.informacion,  
+                        CASE 
+                        WHEN cn.idConcepto IS NOT NULL THEN cn.nombre
+                        ELSE CASE WHEN cv.idPlazo = 0 THEN 'CUOTA INICIAL' ELSE CONCAT('CUOTA',' ',pl.cuota) END END AS detalle,
+                        IFNULL(CONCAT(cp.nombre,' ',v.serie,'-',v.numeracion),'') AS comprobanteRef,
+                        m.simbolo,
+                        m.codiso,
+                        b.nombre as banco,  
+                        c.observacion, 
+                        DATE_FORMAT(c.fecha,'%d/%m/%Y') as fecha, 
+                        c.hora,
+                        nc.idNotaCredito,
+                        c.estado,
+                        IFNULL(SUM(cd.precio*cd.cantidad),ROUND(SUM(cv.precio), 2)) AS monto,
+                        u.nombres,
+                        u.apellidos,
+                        p.nombre AS nombreProyecto,
+                        DATE_FORMAT(pl.fecha,'%d/%m/%Y') AS fechaPlazo,
+                        pl.hora AS horaPlazo
+                        FROM cobro AS c
+                        INNER JOIN cliente AS cl ON c.idCliente = cl.idCliente
+                        INNER JOIN banco AS b ON c.idBanco = b.idBanco
+                        INNER JOIN moneda AS m ON c.idMoneda = m.idMoneda 
+                        INNER JOIN comprobante AS co ON co.idComprobante = c.idComprobante
+                        LEFT JOIN cobroDetalle AS cd ON c.idCobro = cd.idCobro
+                        LEFT JOIN concepto AS cn ON cd.idConcepto = cn.idConcepto 
+                        LEFT JOIN cobroVenta AS cv ON cv.idCobro = c.idCobro 
+                        LEFT JOIN plazo AS pl ON pl.idPlazo = cv.idPlazo
+                        LEFT JOIN venta AS v ON cv.idVenta = v.idVenta 
+                        LEFT JOIN comprobante AS cp ON v.idComprobante = cp.idComprobante
+                        LEFT JOIN usuario AS u ON u.idUsuario = c.idUsuario
+                        LEFT JOIN proyecto AS p ON p.idProyecto = c.idProyecto
+                        LEFT JOIN notaCredito AS nc ON nc.idCobro = c.idCobro AND nc.estado = 1
+                        WHERE 
+                        c.fecha BETWEEN ? AND ? AND ? = '' AND ? = '' AND ? = '' AND ? = '' AND ((pl.fecha BETWEEN ? AND ?) OR pl.fecha is null)
+                        OR
+                        c.fecha BETWEEN ? AND ? AND co.idComprobante = ? AND ? = '' AND ? = '' AND ? = '' AND ((pl.fecha BETWEEN ? AND ?) OR pl.fecha is null)
+                        OR
+                        c.fecha BETWEEN ? AND ? AND ? = '' AND u.idUsuario = ? AND ? = '' AND ? = '' AND ((pl.fecha BETWEEN ? AND ?) OR pl.fecha is null)
+                        OR
+                        c.fecha BETWEEN ? AND ? AND ? = '' AND ? = '' AND c.idProyecto = ? AND ? = '' AND ((pl.fecha BETWEEN ? AND ?) OR pl.fecha is null)
+                        OR
+                        c.fecha BETWEEN ? AND ? AND ? = '' AND ? = '' AND ? = '' AND b.idBanco = ? AND ((pl.fecha BETWEEN ? AND ?) OR pl.fecha is null)
+                        OR
+                        c.fecha BETWEEN ? AND ? AND co.idComprobante = ? AND u.idUsuario = ? AND ? = '' AND ? = '' AND ((pl.fecha BETWEEN ? AND ?) OR pl.fecha is null)
+                        OR 
+                        c.fecha BETWEEN ? AND ? AND co.idComprobante = ? AND ? = '' AND c.idProyecto = ? AND ? = '' AND ((pl.fecha BETWEEN ? AND ?) OR pl.fecha is null)
+                        OR 
+                        c.fecha BETWEEN ? AND ? AND co.idComprobante = ? AND ? = '' AND ? = '' AND b.idBanco = ? AND ((pl.fecha BETWEEN ? AND ?) OR pl.fecha is null)
+                        OR
+                        c.fecha BETWEEN ? AND ? AND ? = '' AND u.idUsuario = ? AND c.idProyecto = ? AND ? = '' AND ((pl.fecha BETWEEN ? AND ?) OR pl.fecha is null)
+                        OR
+                        c.fecha BETWEEN ? AND ? AND ? = '' AND u.idUsuario = ? AND ? = '' AND b.idBanco = ? AND ((pl.fecha BETWEEN ? AND ?) OR pl.fecha is null)
+                        OR
+                        c.fecha BETWEEN ? AND ? AND ? = '' AND ? = '' AND c.idProyecto = ? AND b.idBanco = ? AND ((pl.fecha BETWEEN ? AND ?) OR pl.fecha is null)
+                        OR
+                        c.fecha BETWEEN ? AND ? AND ? = '' AND u.idUsuario = ? AND c.idProyecto = ? AND b.idBanco = ? AND ((pl.fecha BETWEEN ? AND ?) OR pl.fecha is null)
+                        OR
+                        c.fecha BETWEEN ? AND ? AND co.idComprobante = ? AND ? = '' AND c.idProyecto = ? AND b.idBanco = ? AND ((pl.fecha BETWEEN ? AND ?) OR pl.fecha is null)
+                        OR
+                        c.fecha BETWEEN ? AND ? AND co.idComprobante = ? AND u.idUsuario = ? AND ? = '' AND b.idBanco = ? AND ((pl.fecha BETWEEN ? AND ?) OR pl.fecha is null)
+                        OR
+                        c.fecha BETWEEN ? AND ? AND co.idComprobante = ? AND u.idUsuario = ? AND c.idProyecto = ? AND ? = '' AND ((pl.fecha BETWEEN ? AND ?) OR pl.fecha is null)
+                        OR
+                        c.fecha BETWEEN ? AND ? AND co.idComprobante = ? AND u.idUsuario = ? AND c.idProyecto = ? AND b.idBanco = ? AND ((pl.fecha BETWEEN ? AND ?) OR pl.fecha is null)
+
+                        GROUP BY c.idCobro
+                        ORDER BY c.fecha DESC,c.hora DESC
+                        `, [
+                        req.query.fechaIni,
+                        req.query.fechaFin,
+                        req.query.idComprobante,
+                        req.query.idUsuario,
+                        req.query.idProyecto,
+                        req.query.idBanco,
+                        req.query.fechaIni,
+                        req.query.fechaFin,
+
+                        req.query.fechaIni,
+                        req.query.fechaFin,
+                        req.query.idComprobante,
+                        req.query.idUsuario,
+                        req.query.idProyecto,
+                        req.query.idBanco,
+                        req.query.fechaIni,
+                        req.query.fechaFin,
+
+                        req.query.fechaIni,
+                        req.query.fechaFin,
+                        req.query.idComprobante,
+                        req.query.idUsuario,
+                        req.query.idProyecto,
+                        req.query.idBanco,
+                        req.query.fechaIni,
+                        req.query.fechaFin,
+
+                        req.query.fechaIni,
+                        req.query.fechaFin,
+                        req.query.idComprobante,
+                        req.query.idUsuario,
+                        req.query.idProyecto,
+                        req.query.idBanco,
+                        req.query.fechaIni,
+                        req.query.fechaFin,
+
+                        req.query.fechaIni,
+                        req.query.fechaFin,
+                        req.query.idComprobante,
+                        req.query.idUsuario,
+                        req.query.idProyecto,
+                        req.query.idBanco,
+                        req.query.fechaIni,
+                        req.query.fechaFin,
+
+                        req.query.fechaIni,
+                        req.query.fechaFin,
+                        req.query.idComprobante,
+                        req.query.idUsuario,
+                        req.query.idProyecto,
+                        req.query.idBanco,
+                        req.query.fechaIni,
+                        req.query.fechaFin,
+
+                        req.query.fechaIni,
+                        req.query.fechaFin,
+                        req.query.idComprobante,
+                        req.query.idUsuario,
+                        req.query.idProyecto,
+                        req.query.idBanco,
+                        req.query.fechaIni,
+                        req.query.fechaFin,
+
+                        req.query.fechaIni,
+                        req.query.fechaFin,
+                        req.query.idComprobante,
+                        req.query.idUsuario,
+                        req.query.idProyecto,
+                        req.query.idBanco,
+                        req.query.fechaIni,
+                        req.query.fechaFin,
+
+                        req.query.fechaIni,
+                        req.query.fechaFin,
+                        req.query.idComprobante,
+                        req.query.idUsuario,
+                        req.query.idProyecto,
+                        req.query.idBanco,
+                        req.query.fechaIni,
+                        req.query.fechaFin,
+
+                        req.query.fechaIni,
+                        req.query.fechaFin,
+                        req.query.idComprobante,
+                        req.query.idUsuario,
+                        req.query.idProyecto,
+                        req.query.idBanco,
+                        req.query.fechaIni,
+                        req.query.fechaFin,
+
+                        req.query.fechaIni,
+                        req.query.fechaFin,
+                        req.query.idComprobante,
+                        req.query.idUsuario,
+                        req.query.idProyecto,
+                        req.query.idBanco,
+                        req.query.fechaIni,
+                        req.query.fechaFin,
+
+                        req.query.fechaIni,
+                        req.query.fechaFin,
+                        req.query.idComprobante,
+                        req.query.idUsuario,
+                        req.query.idProyecto,
+                        req.query.idBanco,
+                        req.query.fechaIni,
+                        req.query.fechaFin,
+
+                        req.query.fechaIni,
+                        req.query.fechaFin,
+                        req.query.idComprobante,
+                        req.query.idUsuario,
+                        req.query.idProyecto,
+                        req.query.idBanco,
+                        req.query.fechaIni,
+                        req.query.fechaFin,
+
+                        req.query.fechaIni,
+                        req.query.fechaFin,
+                        req.query.idComprobante,
+                        req.query.idUsuario,
+                        req.query.idProyecto,
+                        req.query.idBanco,
+                        req.query.fechaIni,
+                        req.query.fechaFin,
+
+                        req.query.fechaIni,
+                        req.query.fechaFin,
+                        req.query.idComprobante,
+                        req.query.idUsuario,
+                        req.query.idProyecto,
+                        req.query.idBanco,
+                        req.query.fechaIni,
+                        req.query.fechaFin,
+
+                        req.query.fechaIni,
+                        req.query.fechaFin,
+                        req.query.idComprobante,
+                        req.query.idUsuario,
+                        req.query.idProyecto,
+                        req.query.idBanco,
+                        req.query.fechaIni,
+                        req.query.fechaFin,
+                    ]);
+                }
+
+
 
                 const gastos = await conec.query(`SELECT 
                     g.idGasto,
@@ -1869,80 +2182,327 @@ class Cobro {
 
                 return { "cobros": cobros, "gastos": gastos };
             } else {
-                const cobros = await conec.query(`SELECT
-                    IFNULL(co.idConcepto,'CV01') AS idConcepto,
-                    IFNULL(co.nombre,'POR VENTA') AS concepto,
-                    'INGRESO' AS tipo,
-                    b.idBanco,
-                    b.nombre,
-                    CASE 
-                    WHEN b.tipoCuenta = 1 THEN 'Banco'
-                    WHEN b.tipoCuenta = 2 THEN 'Tarjeta'
-                    ELSE 'Efectivo' END AS 'tipoCuenta',
-                    IFNULL(SUM(cd.precio*cd.cantidad),ROUND(SUM(cv.precio), 2)) AS monto,
-                    p.nombre AS nombreProyecto
-                    FROM cobro as c
-                    LEFT JOIN banco AS b ON c.idBanco = b.idBanco
-                    LEFT JOIN cobroDetalle AS cd ON c.idCobro = cd.idCobro
-                    LEFT JOIN concepto AS co ON co.idConcepto = cd.idConcepto
-                    LEFT JOIN cobroVenta AS cv ON cv.idCobro = c.idCobro
-                    LEFT JOIN proyecto AS p ON p.idProyecto = c.idProyecto
-                    LEFT JOIN notaCredito AS nc ON nc.idCobro = c.idCobro AND nc.estado = 1
-                    WHERE 
-                    c.fecha BETWEEN ? AND ? AND c.estado = 1 AND nc.idNotaCredito IS NULL AND (
-                        ? = '' AND ? = '' AND ? = ''
-                        OR
-                        ? = '' AND c.idUsuario = ? AND ? = ''
-                        OR
-                        c.idComprobante = ? AND ? = '' AND ? = ''
-                        OR
-                        ? = '' AND ? = '' AND c.idProyecto = ?
-                        OR
-                        c.idComprobante = ? AND c.idUsuario = ? AND ? = ''
-                        OR
-                        ? = '' AND c.idUsuario = ? AND c.idProyecto = ?
-                        OR
-                        c.idComprobante = ? AND ? = '' AND c.idProyecto = ?
-                        OR
-                        c.idComprobante = ? AND c.idUsuario = ? AND c.idProyecto = ?
-                    )
-                    GROUP BY c.idCobro`,
-                    [
-                        req.query.fechaIni,
-                        req.query.fechaFin,
 
-                        req.query.idComprobante,
-                        req.query.idUsuario,
-                        req.query.idProyecto,
+                let cobros
 
-                        req.query.idComprobante,
-                        req.query.idUsuario,
-                        req.query.idProyecto,
+                if (req.query.includeLatePayments) {
+                    cobros = await conec.query(`SELECT
+                        IFNULL(co.idConcepto,'CV01') AS idConcepto,
+                        IFNULL(co.nombre,'POR VENTA') AS concepto,
+                        'INGRESO' AS tipo,
+                        b.idBanco,
+                        b.nombre,
+                        CASE 
+                        WHEN b.tipoCuenta = 1 THEN 'Banco'
+                        WHEN b.tipoCuenta = 2 THEN 'Tarjeta'
+                        ELSE 'Efectivo' END AS 'tipoCuenta',
+                        IFNULL(SUM(cd.precio*cd.cantidad),ROUND(SUM(cv.precio), 2)) AS monto,
+                        p.nombre AS nombreProyecto
+                        FROM cobro as c
+                        LEFT JOIN banco AS b ON c.idBanco = b.idBanco
+                        LEFT JOIN cobroDetalle AS cd ON c.idCobro = cd.idCobro
+                        LEFT JOIN concepto AS co ON co.idConcepto = cd.idConcepto
+                        LEFT JOIN cobroVenta AS cv ON cv.idCobro = c.idCobro
+                        LEFT JOIN proyecto AS p ON p.idProyecto = c.idProyecto
+                        LEFT JOIN notaCredito AS nc ON nc.idCobro = c.idCobro AND nc.estado = 1
+                        WHERE 
+                        c.fecha BETWEEN ? AND ? AND c.estado = 1 AND nc.idNotaCredito IS NULL AND (
+                            ? = '' AND ? = '' AND ? = '' AND ? = ''
 
-                        req.query.idComprobante,
-                        req.query.idUsuario,
-                        req.query.idProyecto,
+                            OR
+                            c.idComprobante = ? AND ? = '' AND ? = '' AND ? = ''
+                            OR
+                            ? = '' AND c.idUsuario = ? AND ? = '' AND ? = ''
+                            OR
+                            ? = '' AND ? = '' AND c.idProyecto = ? AND ? = ''
+                            OR
+                            ? = '' AND ? = '' AND ? = '' AND b.idBanco = ?
 
-                        req.query.idComprobante,
-                        req.query.idUsuario,
-                        req.query.idProyecto,
+                            OR
+                            c.idComprobante = ? AND c.idUsuario = ? AND ? = '' AND ? = ''
+                            OR
+                            c.idComprobante = ? AND ? = '' AND c.idProyecto = ? AND ? = ''
+                            OR
+                            c.idComprobante = ? AND ? = '' AND ? = '' AND b.idBanco = ?
 
-                        req.query.idComprobante,
-                        req.query.idUsuario,
-                        req.query.idProyecto,
+                            OR
+                            ? = '' AND c.idUsuario = ? AND c.idProyecto = ? AND ? = ''
+                            OR
+                            ? = '' AND c.idUsuario = ? AND ? = '' AND b.idBanco = ?
 
-                        req.query.idComprobante,
-                        req.query.idUsuario,
-                        req.query.idProyecto,
+                            OR
+                            ? = '' AND ? = '' AND c.idProyecto = ? AND b.idBanco = ?
 
-                        req.query.idComprobante,
-                        req.query.idUsuario,
-                        req.query.idProyecto,
+                            OR
+                            ? = '' AND c.idUsuario = ? AND c.idProyecto = ? AND b.idBanco = ?
+                            OR
+                            c.idComprobante = ? AND ? = '' AND c.idProyecto = ? AND b.idBanco = ?
+                            OR
+                            c.idComprobante = ? AND c.idUsuario = ? AND ? = '' AND b.idBanco = ?
+                            OR
+                            c.idComprobante = ? AND c.idUsuario = ? AND c.idProyecto = ? AND ? = ''
 
-                        req.query.idComprobante,
-                        req.query.idUsuario,
-                        req.query.idProyecto,
-                    ]);
+                            OR
+                            c.idComprobante = ? AND c.idUsuario = ? AND c.idProyecto = ? AND b.idBanco = ?
+                        )
+                        GROUP BY c.idCobro`,
+                        [
+                            req.query.fechaIni,
+                            req.query.fechaFin,
+
+                            req.query.idComprobante,
+                            req.query.idUsuario,
+                            req.query.idProyecto,
+                            req.query.idBanco,
+
+                            req.query.idComprobante,
+                            req.query.idUsuario,
+                            req.query.idProyecto,
+                            req.query.idBanco,
+
+                            req.query.idComprobante,
+                            req.query.idUsuario,
+                            req.query.idProyecto,
+                            req.query.idBanco,
+
+                            req.query.idComprobante,
+                            req.query.idUsuario,
+                            req.query.idProyecto,
+                            req.query.idBanco,
+
+                            req.query.idComprobante,
+                            req.query.idUsuario,
+                            req.query.idProyecto,
+                            req.query.idBanco,
+
+                            req.query.idComprobante,
+                            req.query.idUsuario,
+                            req.query.idProyecto,
+                            req.query.idBanco,
+
+                            req.query.idComprobante,
+                            req.query.idUsuario,
+                            req.query.idProyecto,
+                            req.query.idBanco,
+
+                            req.query.idComprobante,
+                            req.query.idUsuario,
+                            req.query.idProyecto,
+                            req.query.idBanco,
+
+                            req.query.idComprobante,
+                            req.query.idUsuario,
+                            req.query.idProyecto,
+                            req.query.idBanco,
+                            
+                            req.query.idComprobante,
+                            req.query.idUsuario,
+                            req.query.idProyecto,
+                            req.query.idBanco,
+
+                            req.query.idComprobante,
+                            req.query.idUsuario,
+                            req.query.idProyecto,
+                            req.query.idBanco,
+
+                            req.query.idComprobante,
+                            req.query.idUsuario,
+                            req.query.idProyecto,
+                            req.query.idBanco,
+
+                            req.query.idComprobante,
+                            req.query.idUsuario,
+                            req.query.idProyecto,
+                            req.query.idBanco,
+
+                            req.query.idComprobante,
+                            req.query.idUsuario,
+                            req.query.idProyecto,
+                            req.query.idBanco,
+
+                            req.query.idComprobante,
+                            req.query.idUsuario,
+                            req.query.idProyecto,
+                            req.query.idBanco,
+
+                            req.query.idComprobante,
+                            req.query.idUsuario,
+                            req.query.idProyecto,
+                            req.query.idBanco,
+                        ]);
+
+                } else {
+                    console.log(req.query)
+                    cobros = await conec.query(`SELECT
+                        IFNULL(co.idConcepto,'CV01') AS idConcepto,
+                        IFNULL(co.nombre,'POR VENTA') AS concepto,
+                        'INGRESO' AS tipo,
+                        b.idBanco,
+                        b.nombre,
+                        CASE 
+                        WHEN b.tipoCuenta = 1 THEN 'Banco'
+                        WHEN b.tipoCuenta = 2 THEN 'Tarjeta'
+                        ELSE 'Efectivo' END AS 'tipoCuenta',
+                        IFNULL(SUM(cd.precio*cd.cantidad),ROUND(SUM(cv.precio), 2)) AS monto,
+                        p.nombre AS nombreProyecto
+                        FROM cobro as c
+                        LEFT JOIN banco AS b ON c.idBanco = b.idBanco
+                        LEFT JOIN cobroDetalle AS cd ON c.idCobro = cd.idCobro
+                        LEFT JOIN concepto AS co ON co.idConcepto = cd.idConcepto
+                        LEFT JOIN cobroVenta AS cv ON cv.idCobro = c.idCobro
+                        LEFT JOIN plazo AS pl ON pl.idPlazo = cv.idPlazo
+                        LEFT JOIN proyecto AS p ON p.idProyecto = c.idProyecto
+                        LEFT JOIN notaCredito AS nc ON nc.idCobro = c.idCobro AND nc.estado = 1
+                        WHERE 
+                        c.fecha BETWEEN ? AND ? AND (
+                            ? = '' AND ? = '' AND ? = '' AND ? = ''
+                            OR
+                            c.idComprobante = ? AND ? = '' AND ? = '' AND ? = '' AND ((pl.fecha BETWEEN ? AND ?) OR pl.fecha is null)
+                            OR
+                            ? = '' AND c.idUsuario = ? AND ? = '' AND ? = '' AND ((pl.fecha BETWEEN ? AND ?) OR pl.fecha is null)
+                            OR
+                            ? = '' AND ? = '' AND c.idProyecto = ? AND ? = '' AND ((pl.fecha BETWEEN ? AND ?) OR pl.fecha is null)
+                            OR
+                            ? = '' AND ? = '' AND ? = '' AND b.idBanco = ? AND ((pl.fecha BETWEEN ? AND ?) OR pl.fecha is null)
+                            OR
+                            c.idComprobante = ? AND c.idUsuario = ? AND ? = '' AND ? = '' AND ((pl.fecha BETWEEN ? AND ?) OR pl.fecha is null)
+                            OR
+                            c.idComprobante = ? AND ? = '' AND c.idProyecto = ? AND ? = '' AND ((pl.fecha BETWEEN ? AND ?) OR pl.fecha is null)
+                            OR
+                            c.idComprobante = ? AND ? = '' AND ? = '' AND b.idBanco = ? AND ((pl.fecha BETWEEN ? AND ?) OR pl.fecha is null)
+                            OR
+                            ? = '' AND c.idUsuario = ? AND c.idProyecto = ? AND ? = '' AND ((pl.fecha BETWEEN ? AND ?) OR pl.fecha is null)
+                            OR
+                            ? = '' AND c.idUsuario = ? AND ? = '' AND b.idBanco = ? AND ((pl.fecha BETWEEN ? AND ?) OR pl.fecha is null)
+                            OR
+                            ? = '' AND ? = '' AND c.idProyecto = ? AND b.idBanco = ? AND ((pl.fecha BETWEEN ? AND ?) OR pl.fecha is null)
+                            OR
+                            ? = '' AND c.idUsuario = ? AND c.idProyecto = ? AND b.idBanco = ? AND ((pl.fecha BETWEEN ? AND ?) OR pl.fecha is null)
+                            OR
+                            c.idComprobante = ? AND ? = '' AND c.idProyecto = ? AND b.idBanco = ? AND ((pl.fecha BETWEEN ? AND ?) OR pl.fecha is null)
+                            OR
+                            c.idComprobante = ? AND c.idUsuario = ? AND ? = '' AND b.idBanco = ? AND ((pl.fecha BETWEEN ? AND ?) OR pl.fecha is null)
+                            OR
+                            c.idComprobante = ? AND c.idUsuario = ? AND c.idProyecto = ? AND ? = '' AND ((pl.fecha BETWEEN ? AND ?) OR pl.fecha is null)
+                            OR
+                            c.idComprobante = ? AND c.idUsuario = ? AND c.idProyecto = ? AND b.idBanco = ? AND ((pl.fecha BETWEEN ? AND ?) OR pl.fecha is null)
+                        )
+                        GROUP BY c.idCobro`,
+                        [
+                            req.query.fechaIni,
+                            req.query.fechaFin,
+
+                            req.query.idComprobante,
+                            req.query.idUsuario,
+                            req.query.idProyecto,
+                            req.query.idBanco,
+
+                            req.query.idComprobante,
+                            req.query.idUsuario,
+                            req.query.idProyecto,
+                            req.query.idBanco,
+                            req.query.fechaIni,
+                            req.query.fechaFin,
+
+                            req.query.idComprobante,
+                            req.query.idUsuario,
+                            req.query.idProyecto,
+                            req.query.idBanco,
+                            req.query.fechaIni,
+                            req.query.fechaFin,
+
+                            req.query.idComprobante,
+                            req.query.idUsuario,
+                            req.query.idProyecto,
+                            req.query.idBanco,
+                            req.query.fechaIni,
+                            req.query.fechaFin,
+
+                            req.query.idComprobante,
+                            req.query.idUsuario,
+                            req.query.idProyecto,
+                            req.query.idBanco,
+                            req.query.fechaIni,
+                            req.query.fechaFin,
+
+                            req.query.idComprobante,
+                            req.query.idUsuario,
+                            req.query.idProyecto,
+                            req.query.idBanco,
+                            req.query.fechaIni,
+                            req.query.fechaFin,
+
+                            req.query.idComprobante,
+                            req.query.idUsuario,
+                            req.query.idProyecto,
+                            req.query.idBanco,
+                            req.query.fechaIni,
+                            req.query.fechaFin,
+
+                            req.query.idComprobante,
+                            req.query.idUsuario,
+                            req.query.idProyecto,
+                            req.query.idBanco,
+                            req.query.fechaIni,
+                            req.query.fechaFin,
+
+                            req.query.idComprobante,
+                            req.query.idUsuario,
+                            req.query.idProyecto,
+                            req.query.idBanco,
+                            req.query.fechaIni,
+                            req.query.fechaFin,
+                            
+                            req.query.idComprobante,
+                            req.query.idUsuario,
+                            req.query.idProyecto,
+                            req.query.idBanco,
+                            req.query.fechaIni,
+                            req.query.fechaFin,
+
+                            req.query.idComprobante,
+                            req.query.idUsuario,
+                            req.query.idProyecto,
+                            req.query.idBanco,
+                            req.query.fechaIni,
+                            req.query.fechaFin,
+
+                            req.query.idComprobante,
+                            req.query.idUsuario,
+                            req.query.idProyecto,
+                            req.query.idBanco,
+                            req.query.fechaIni,
+                            req.query.fechaFin,
+
+                            req.query.idComprobante,
+                            req.query.idUsuario,
+                            req.query.idProyecto,
+                            req.query.idBanco,
+                            req.query.fechaIni,
+                            req.query.fechaFin,
+
+                            req.query.idComprobante,
+                            req.query.idUsuario,
+                            req.query.idProyecto,
+                            req.query.idBanco,
+                            req.query.fechaIni,
+                            req.query.fechaFin,
+
+                            req.query.idComprobante,
+                            req.query.idUsuario,
+                            req.query.idProyecto,
+                            req.query.idBanco,
+                            req.query.fechaIni,
+                            req.query.fechaFin,
+
+                            req.query.idComprobante,
+                            req.query.idUsuario,
+                            req.query.idProyecto,
+                            req.query.idBanco,
+                            req.query.fechaIni,
+                            req.query.fechaFin,
+                        ]);
+                }
 
                 const gastos = await conec.query(`
                     SELECT
@@ -2043,7 +2603,7 @@ class Cobro {
                 return { "conceptos": conceptos, "bancos": bancos };
             }
         } catch (error) {
-            return "Se produjo un error de servidor, intente nuevamente.";
+            return "Se produjo un error de servidor, intente nuevamente."+ error;
         }
     }
 

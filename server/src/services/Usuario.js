@@ -448,7 +448,7 @@ class Usuario {
         try {
             let result = await conec.query(`SELECT 
                 idUsuario, nombres, apellidos, dni, estado
-                FROM usuario`);
+                FROM usuario where login = 1`);
             return sendSuccess(res, result);
         } catch (error) {
             return sendError(res, "Se produjo un error de servidor, intente nuevamente.");

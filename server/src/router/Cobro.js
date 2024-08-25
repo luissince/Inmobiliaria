@@ -305,9 +305,11 @@ router.get('/repgeneralcobros', async function (req, res) {
     req.query.fechaIni = decryptedData.fechaIni;
     req.query.fechaFin = decryptedData.fechaFin;
     req.query.isDetallado = decryptedData.isDetallado;
+    req.query.includeLatePayments = decryptedData.includeLatePayments,
     req.query.idComprobante = decryptedData.idComprobante;
     req.query.idUsuario = decryptedData.idUsuario;
     req.query.idProyecto = decryptedData.idProyecto;
+    req.query.idBanco = decryptedData.idBanco;
 
     const sedeInfo = await sede.infoSedeReporte(req);
 
@@ -340,9 +342,11 @@ router.get('/excelgeneralcobros', async function (req, res) {
     req.query.fechaIni = decryptedData.fechaIni;
     req.query.fechaFin = decryptedData.fechaFin;
     req.query.isDetallado = decryptedData.isDetallado;
+    req.query.includeLatePayments = decryptedData.includeLatePayments;
     req.query.idComprobante = decryptedData.idComprobante;
     req.query.idUsuario = decryptedData.idUsuario;
     req.query.idProyecto = decryptedData.idProyecto;
+    req.query.idBanco = decryptedData.idBanco;
 
     const sedeInfo = await sede.infoSedeReporte(req);
 

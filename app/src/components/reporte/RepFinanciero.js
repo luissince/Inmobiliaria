@@ -16,6 +16,7 @@ class RepFinanciero extends React.Component {
             fechaFin: '',
             isFechaActive: false,
             isDetallado: false,
+            includeLatePayments: true,
 
             //Cobro
             idCliente: '',
@@ -23,6 +24,7 @@ class RepFinanciero extends React.Component {
 
             idBanco: '',
             bancos: [],
+            bancoCheck: true,
 
             idProyecto: '',
             idComprobante: '',
@@ -87,12 +89,16 @@ class RepFinanciero extends React.Component {
                 "tipo": "5",
                 "estado": "all"
             });
+            const banco = await axios.get("/api/banco/listcombo", {
+                signal: this.abortControllerView.signal
+            });
 
             await this.setStateAsync({
                 fechaIni: currentDate(),
                 fechaFin: currentDate(),
                 usuarios: usuario.data,
                 comprobantes: [...comprobante.data, ...facturado.data],
+                bancos: banco.data,
                 proyectos: proyecto.data,
 
                 loading: false
@@ -119,9 +125,11 @@ class RepFinanciero extends React.Component {
             "fechaIni": this.state.fechaIni,
             "fechaFin": this.state.fechaFin,
             "isDetallado": this.state.isDetallado,
+            "includeLatePayments": this.state.includeLatePayments,
             "idComprobante": this.state.idComprobante,
             "idUsuario": this.state.idUsuario,
-            "idProyecto": this.state.idProyecto,
+            "idProyecto": this.state.idProyecto, 
+            "idBanco": this.state.idBanco,           
         }
 
         let ciphertext = CryptoJS.AES.encrypt(JSON.stringify(data), 'key-report-inmobiliaria').toString();
@@ -141,9 +149,11 @@ class RepFinanciero extends React.Component {
             "fechaIni": this.state.fechaIni,
             "fechaFin": this.state.fechaFin,
             "isDetallado": this.state.isDetallado,
+            "includeLatePayments": this.state.includeLatePayments,
             "idComprobante": this.state.idComprobante,
             "idUsuario": this.state.idUsuario,
             "idProyecto": this.state.idProyecto,
+            "idBanco": this.state.idBanco,           
         }
 
         let ciphertext = CryptoJS.AES.encrypt(JSON.stringify(data), 'key-report-inmobiliaria').toString();
@@ -241,6 +251,25 @@ class RepFinanciero extends React.Component {
                                     </div>
                                 </div>
                             </div>
+
+                            <div className="col">
+                                <div className="form-group">
+                                    <label>Incluir Pagos Atrasados </label>
+                                    <div className="custom-control custom-switch">
+                                        <input
+                                            type="checkbox"
+                                            className="custom-control-input"
+                                            id="customSwitch3"
+                                            checked={this.state.includeLatePayments}
+                                            onChange={(event) => {
+                                                this.setState({ includeLatePayments: event.target.checked })
+                                            }}
+                                        >
+                                        </input>
+                                        <label className="custom-control-label" htmlFor="customSwitch3">{this.state.includeLatePayments ? 'Si' : 'No'}</label>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <div className="row">
@@ -283,7 +312,7 @@ class RepFinanciero extends React.Component {
                                             <option value="">-- Todos --</option>
                                             {
                                                 this.state.proyectos.map((item, index) => (
-                                                    <option key={index} value={item.idProyecto}>{(index+1) + '.- ' +item.nombre }</option>
+                                                    <option key={index} value={item.idProyecto}>{(index + 1) + '.- ' + item.nombre}</option>
                                                 ))
                                             }
                                         </select>
@@ -298,6 +327,51 @@ class RepFinanciero extends React.Component {
                                                             await this.setStateAsync({ proyectoCheck: event.target.checked })
                                                             if (this.state.proyectoCheck) {
                                                                 await this.setStateAsync({ idProyecto: '' });
+                                                            }
+                                                        }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="col">
+                                <div className="form-group">
+                                    <label>Bancos</label>
+                                    <div className="input-group">
+                                        <select
+                                            title="Lista de usuarios"
+                                            className="form-control"
+                                            ref={this.refBanco}
+                                            value={this.state.idBanco}
+                                            disabled={this.state.bancoCheck}
+                                            onChange={async (event) => {
+                                                await this.setStateAsync({ idBanco: event.target.value });
+                                                if (this.state.idBanco === '') {
+                                                    await this.setStateAsync({ bancoCheck: true });
+                                                }
+                                            }}
+                                        >
+                                            <option value="">-- Todos --</option>
+                                            {
+                                                this.state.bancos.map((item, index) => (
+                                                    <option key={index} value={item.idBanco}>{item.nombre }</option>
+                                                ))
+                                            }
+                                        </select>
+                                        <div className="input-group-append">
+                                            <div className="input-group-text">
+                                                <div className="form-check form-check-inline m-0">
+                                                    <input
+                                                        className="form-check-input"
+                                                        type="checkbox"
+                                                        checked={this.state.bancoCheck}
+                                                        onChange={async (event) => {
+                                                            await this.setStateAsync({ bancoCheck: event.target.checked })
+                                                            if (this.state.bancoCheck) {
+                                                                await this.setStateAsync({ idBanco: '' });
                                                             }
                                                         }}
                                                     />

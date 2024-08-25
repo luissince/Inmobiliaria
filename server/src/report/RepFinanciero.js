@@ -209,9 +209,9 @@ class RepFinanciero {
             const doc = new PDFDocument({
                 margins: {
                     top: 40,
-                    bottom: 40,
-                    left: 40,
-                    right: 40
+                    bottom: 35,
+                    left: 33,
+                    right: 33
                 }
             });
             doc.info["Title"] = `REPORTE DE COBROS Y GASTOS DEL ${req.query.fechaIni} AL ${req.query.fechaFin}`
@@ -226,6 +226,7 @@ class RepFinanciero {
             let h2 = 11;
             let h3 = 9;
             let h4 = 8;
+            let h5 = 7;
 
             if (isFile(path.join(__dirname, "..", "path/company/" + sedeInfo.rutaLogo))) {
                 doc.image(path.join(__dirname, "..", "path/company/" + sedeInfo.rutaLogo), doc.x, doc.y, { width: 75 });
@@ -303,6 +304,7 @@ class RepFinanciero {
                     item.comprobante + "\n" + item.serie + "-" + item.numeracion,
                     item.documento + "\n" + item.informacion,
                     item.detalle,
+                    item.fechaPlazo == null ? item.fecha + "\n" + item.hora : item.fechaPlazo + "\n" + item.horaPlazo,
                     item.banco,
                     item.fecha + "\n" + item.hora,
                     item.nombres,
@@ -311,20 +313,22 @@ class RepFinanciero {
                 ]
             });
 
-            cobros.push(["", "", "", "", "", "", "TOTAL:", numberFormat(sumaMontoCobros), ""]);
+            cobros.push(["", "", "", "", "", "", "", "TOTAL:", numberFormat(sumaMontoCobros), ""]);
 
             //Tabla
             const tableCobros = {
                 subtitle: "RESUMEN DE COBROS",
-                headers: ["#", "Correlativo", "Cliente", "Detalle", "Banco", "Fecha", "Usuario", "Monto", "Anulado"],
+                headers: ["#", "Correlativo", "Cliente", "Detalle", "Fecha Contrato", "Banco", "Fecha Pago", "Usuario", "Monto", "Anulado"],
                 rows: cobros
             };
 
             doc.table(tableCobros, {
                 prepareHeader: () => doc.font("Helvetica-Bold").fontSize(h3),
                 prepareRow: (row, indexColumn, indexRow, rectRow, rectCell) => {
-                    if (indexColumn === 7) {
-                        if (row[7] == "0") {
+                    if (indexColumn === 3) {
+                        doc.font("Helvetica").fontSize(h5);
+                    } else if (indexColumn === 8) {
+                        if (row[8] == "0") {
                             doc.font("Helvetica").fontSize(h4).fillColor("red");
                         }
                     } else {
@@ -333,7 +337,7 @@ class RepFinanciero {
                 },
                 padding: 5,
                 columnSpacing: 5,
-                columnsSize: [22, 60, 80, 60, 60, 60, 70, 60, 60], //532
+                columnsSize: [25, 60, 80, 60, 55, 40, 55, 60, 60, 50], //532
                 x: orgX,
                 y: doc.y + 20,
                 width: doc.page.width - doc.options.margins.left - doc.options.margins.right

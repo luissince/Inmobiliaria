@@ -87,27 +87,30 @@ async function generateExcel(req, sedeInfo, data) {
             ws.column(4).setWidth(15);
             ws.column(5).setWidth(35);
             ws.column(6).setWidth(25);
-            ws.column(7).setWidth(15);
-            ws.column(8).setWidth(20);
-            ws.column(9).setWidth(15);
+
+            ws.column(7).setWidth(20);
+
+            ws.column(8).setWidth(15);
+            ws.column(9).setWidth(20);
             ws.column(10).setWidth(15);
             ws.column(11).setWidth(15);
+            ws.column(12).setWidth(15);
 
-            ws.cell(1, 1, 1, 11, true).string(`${sedeInfo.nombreEmpresa}`).style(styleTitle);
-            ws.cell(2, 1, 2, 11, true).string(`RUC: ${sedeInfo.ruc}`).style(styleTitle);
-            ws.cell(3, 1, 3, 11, true).string(`${sedeInfo.direccion}`).style(styleTitle);
-            ws.cell(4, 1, 4, 11, true).string(`Celular: ${sedeInfo.celular} / Telefono: ${sedeInfo.telefono}`).style(styleTitle);
+            ws.cell(1, 1, 1, 12, true).string(`${sedeInfo.nombreEmpresa}`).style(styleTitle);
+            ws.cell(2, 1, 2, 12, true).string(`RUC: ${sedeInfo.ruc}`).style(styleTitle);
+            ws.cell(3, 1, 3, 12, true).string(`${sedeInfo.direccion}`).style(styleTitle);
+            ws.cell(4, 1, 4, 12, true).string(`Celular: ${sedeInfo.celular} / Telefono: ${sedeInfo.telefono}`).style(styleTitle);
             
-            ws.cell(6, 1, 6, 11, true).string(`REPORTE DE COBROS Y GASTOS`).style(styleTitle);
+            ws.cell(6, 1, 6, 12, true).string(`REPORTE DE COBROS Y GASTOS`).style(styleTitle);
             if (sedeInfo.nombreProyecto) {
-                ws.cell(7, 1, 7, 7, true).string(`PROYECTO: ${sedeInfo.nombreProyecto}`).style(styleNameProyecto);
-                ws.cell(7, 8, 7, 11, true).string(`PERIODO: ${dateFormat(req.query.fechaIni)} al ${dateFormat(req.query.fechaFin)}`).style(styleTitle);
+                ws.cell(7, 1, 7, 8, true).string(`PROYECTO: ${sedeInfo.nombreProyecto}`).style(styleNameProyecto);
+                ws.cell(7, 9, 7, 12, true).string(`PERIODO: ${dateFormat(req.query.fechaIni)} al ${dateFormat(req.query.fechaFin)}`).style(styleTitle);
             } else {
-                ws.cell(7, 1, 7, 11, true).string(`PERIODO: ${dateFormat(req.query.fechaIni)} al ${dateFormat(req.query.fechaFin)}`).style(styleTitle);
+                ws.cell(7, 1, 7, 12, true).string(`PERIODO: ${dateFormat(req.query.fechaIni)} al ${dateFormat(req.query.fechaFin)}`).style(styleTitle);
             }
 
 
-            const headerCon = ["#", "Comprobante", "Correlativo", "Documento", "Cliente", "Detalle", "Banco", "Fecha", "Usuario", "Monto", "Anulado"];
+            const headerCon = ["#", "Comprobante", "Correlativo", "Documento", "Cliente", "Detalle", "Fecha de Contrato", "Banco", "Fecha de Pago", "Usuario", "Monto", "Anulado"];
             headerCon.map((item, index) => ws.cell(9, 1 + index).string(item).style(styleTableHeader));
 
             let sumaMonto = 0;
@@ -118,6 +121,7 @@ async function generateExcel(req, sedeInfo, data) {
                 rowY = rowY + 1;
                 let correlativo = item.serie + "-" + item.numeracion
                 let fechaHora = item.fecha + " " + item.hora
+                let fechaContrato = item.fechaPlazo == null ? fechaHora : item.fechaPlazo + " " + item.horaPlazo 
 
                 styleBodyInteger.font.color = item.estado == 1 && item.idNotaCredito == null ? '#000000' : '#ff0000';
                 styleBody.font.color = item.estado == 1 && item.idNotaCredito == null ? '#000000' : '#ff0000';
@@ -129,11 +133,14 @@ async function generateExcel(req, sedeInfo, data) {
                 ws.cell(rowY, 4).string(item.documento).style(styleBody)
                 ws.cell(rowY, 5).string(item.informacion).style(styleBody)
                 ws.cell(rowY, 6).string(item.detalle).style(styleBody)
-                ws.cell(rowY, 7).string(item.banco).style(styleBody)
-                ws.cell(rowY, 8).string(fechaHora).style(styleBody)
-                ws.cell(rowY, 9).string(item.nombres).style(styleBody)
-                ws.cell(rowY, 10).number(parseFloat(formatMoney(item.estado == 1 && item.idNotaCredito == null ? item.monto : 0))).style(styleBodyFloat)
-                ws.cell(rowY, 11).number(parseFloat(formatMoney(item.estado == 1 && item.idNotaCredito == null ? 0 : item.monto))).style(styleBodyFloat)
+
+                ws.cell(rowY, 7).string(fechaContrato).style(styleBody)
+
+                ws.cell(rowY, 8).string(item.banco).style(styleBody)
+                ws.cell(rowY, 9).string(fechaHora).style(styleBody)
+                ws.cell(rowY, 10).string(item.nombres).style(styleBody)
+                ws.cell(rowY, 11).number(parseFloat(formatMoney(item.estado == 1 && item.idNotaCredito == null ? item.monto : 0))).style(styleBodyFloat)
+                ws.cell(rowY, 12).number(parseFloat(formatMoney(item.estado == 1 && item.idNotaCredito == null ? 0 : item.monto))).style(styleBodyFloat)
             });
 
             styleBody.font.color = '#000000';
@@ -141,8 +148,8 @@ async function generateExcel(req, sedeInfo, data) {
 
             rowY = rowY + 1;
 
-            ws.cell(rowY, 9).string("TOTAL:").style(styleBody)
-            ws.cell(rowY, 10).number(parseFloat(formatMoney(sumaMonto))).style(styleBodyFloat)
+            ws.cell(rowY, 10).string("TOTAL:").style(styleBody)
+            ws.cell(rowY, 11).number(parseFloat(formatMoney(sumaMonto))).style(styleBodyFloat)
 
         } else {
             ws.column(1).setWidth(10);
