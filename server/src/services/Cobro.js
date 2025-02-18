@@ -1351,16 +1351,16 @@ class Cobro {
 
             if (facturado.length > 0) {
 
-                const fecha = await conec.execute(connection, `SELECT fecha 
-                    FROM cobro 
-                    WHERE idCobro = ? AND fecha BETWEEN DATE_ADD(CURRENT_DATE, INTERVAL -4 DAY) AND CURRENT_DATE`, [
-                    req.query.idCobro
-                ]);
+                // const fecha = await conec.execute(connection, `SELECT fecha 
+                //     FROM cobro 
+                //     WHERE idCobro = ? AND fecha BETWEEN DATE_ADD(CURRENT_DATE, INTERVAL -4 DAY) AND CURRENT_DATE`, [
+                //     req.query.idCobro
+                // ]);
 
-                if (fecha.length === 0) {
-                    await conec.rollback(connection);
-                    return "Los comprobantes facturados tienen un límite de 4 días para ser anulados.";
-                }
+                // if (fecha.length === 0) {
+                //     await conec.rollback(connection);
+                //     return "Los comprobantes facturados tienen un límite de 4 días para ser anulados.";
+                // }
 
                 /**
                  * 
