@@ -21,7 +21,7 @@ services:
     ports:
       - 6502:80
     volumes:
-      - inmobiliaria-volumen:/app/src/path
+      - inmobiliaria-volumen:/server/src/path
 
 # Definición de redes
 networks:
