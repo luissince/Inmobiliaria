@@ -7,7 +7,6 @@ app/.gitignore
 server/.gitignore
 
 app/.env.example
-server/.env
 server/.env.example
 
 Dockerfile
