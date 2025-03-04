@@ -1,11 +1,8 @@
-const http = require('http');
 const express = require('express');
 const app = express();
 const path = require('path');
 // const socket = require('socket.io');
 const cors = require('cors');
-const swaggerUi = require('swagger-ui-express');
-const swagger = require('./src/swagger');
 /**
  * Carga de variable de entorno
  */
@@ -49,24 +46,23 @@ app.use(cors());
  */
 app.set('port', process.env.PORT || 5000);
 
-app.use(express.json({ limit: '1024mb' }));
-app.use(express.urlencoded({ limit: '1024mb', extended: false }));
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swagger));
+app.use(express.json({ limit: '500mb' }));
+app.use(express.urlencoded({ limit: '500mb', extended: false }));
 
 /**
  * Cargar la app estatica compilada
  */
-app.use(express.static(path.join(__dirname, "..", "app/build")));
+app.use(express.static(path.join(__dirname, "./dist")));
 
 /**
  * Mostar estaticanmente las imagenes del proyecto
  */
-app.use(express.static(path.join(__dirname, "src/path/proyect")));
+app.use(express.static(path.join(__dirname, "./src/path/proyect")));
 
 /**
  * Mostar estaticanmente las imagenes de la empresa
  */
-app.use(express.static(path.join(__dirname, "src/path/company")));
+app.use(express.static(path.join(__dirname, "./src/path/company")));
 
 /**
  * Cargar las rutas de la apis
@@ -107,7 +103,7 @@ app.use('/api/dashboard', require('./src/router/Dashboard'));
  * 
  */
 app.use((req, res, next) => {
-    res.sendFile(path.join(__dirname, "..", "app/build", "index.html"));
+    res.sendFile(path.join(__dirname, "./dist", "index.html"));
 });
 
 // // Se ejecuta cuando los clientes se conectan

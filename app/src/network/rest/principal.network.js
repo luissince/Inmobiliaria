@@ -4,7 +4,7 @@ import ErrorResponse from "../../model/class/error";
 import Resolve from "../../model/class/resolve";
 
 const instance = axios.create({
-  baseURL: process.env.REACT_APP_END_POINT,
+  baseURL: import.meta.env.VITE_APP_END_POINT,
   timeout: 10000,
   headers: {
     Accept: "application/json",
@@ -27,7 +27,7 @@ instance.interceptors.request.use((config) => {
  * @returns {SuccessReponse | ErrorResponse} SuccessReponse | ErrorResponse
  */
 export async function loginApi(params, signal = null) {
-  return Resolve.create(
+  return await Resolve.create(
     instance.get("/api/login/createsession", {
       params: params,
       signal: signal,

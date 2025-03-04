@@ -1,0 +1,32 @@
+# Ignorar archivos y carpetas innecesarias
+.git
+.vscode
+.DS_Store
+
+app/.gitignore
+server/.gitignore
+
+app/.env.example
+server/.env
+server/.env.example
+
+Dockerfile
+
+docker-compose.yml
+
+docker-compose.dev.yml
+
+# Archivos de configuración y documentación
+app/README.md
+server/README.md
+
+app/LICENSE
+server/LICENSE
+
+app/eslint.config.js
+
+# Ignorar node_modules y la carpeta de build
+app/node_modules
+server/node_modules
+
+app/dist
