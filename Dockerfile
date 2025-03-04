@@ -36,7 +36,7 @@ COPY server/ ./
 USER node
 
 # Asignar la propiedad de la carpeta al usuario 'node'
-RUN chown -R node:node /back-end
+RUN chown -R node:node /back-end/src
 
 # Exponer el puerto 80 para la aplicación
 EXPOSE 80
