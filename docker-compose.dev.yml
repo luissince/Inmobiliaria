@@ -2,9 +2,19 @@ version: '3.8'
 
 services:
   app:
+    
     container_name: inmobiliaria
     build:
       context: .
       dockerfile: Dockerfile
+    environment:
+      - PORT=80
+      - DB_HOST=host.docker.internal
+      - DB_USER=root
+      - DB_PASSWORD=
+      - DB_NAME=inmobiliaria
+      - DB_PORT=3306
+      - TZ="America/Lima"
+      - ENVIRONMENT="development"
     ports:
       - "5001:80"

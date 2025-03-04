@@ -30,7 +30,6 @@ COPY server/package.json server/package-lock.json ./
 RUN npm install --only=production 
 
 # Copiar el resto de los archivos del backend
-COPY server/.env.dev ./.env
 COPY server/ ./
 
 # Cambiar al usuario no privilegiado (node) por razones de seguridad
