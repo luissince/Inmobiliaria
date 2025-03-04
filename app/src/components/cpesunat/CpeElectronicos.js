@@ -796,7 +796,7 @@ class CpeElectronicos extends React.Component {
                                         <th width="5%">Opciones</th>
                                         <th width="10%">Fecha</th>
                                         <th width="10%">Comprobante</th>
-                                        <th width="10%">Cliente</th>
+                                        <th width="15%">Cliente</th>
                                         <th width="10%">Estado</th>
                                         <th width="10%">Total</th>
                                         <th width="10%">Estado Sunat</th>
@@ -855,7 +855,7 @@ class CpeElectronicos extends React.Component {
                                                         </td>
                                                         <td>{<span>{item.fecha}</span>}{<br></br>}{<span>{timeForma24(item.hora)}</span>}</td>
                                                         <td>{item.comprobante}{<br />}{item.serie + "-" + item.numeracion}</td>
-                                                        <td>{item.documento}{<br />}{item.informacion}</td>
+                                                        <td> {item.tipoDocumento} - {item.documento}{<br />}{item.informacion}</td>
 
 
                                                         <td className="text-center">
