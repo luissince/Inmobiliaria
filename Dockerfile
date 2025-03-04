@@ -35,6 +35,9 @@ COPY server/ ./
 # Cambiar al usuario no privilegiado (node) por razones de seguridad
 USER node
 
+# Asignar la propiedad de la carpeta al usuario 'node'
+RUN chown -R node:node /back-end
+
 # Exponer el puerto 80 para la aplicación
 EXPOSE 80
 
