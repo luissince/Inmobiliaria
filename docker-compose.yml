@@ -21,7 +21,7 @@ services:
     ports:
       - 6502:80
     volumes:
-      - inmobiliaria-volumen:/server/src/path
+      - volume-path:/back-end/src/path
 
 # Definición de redes
 networks:
@@ -31,4 +31,4 @@ networks:
     external: true
 
 volumes:
-  inmobiliaria-volumen:
+  volume-path:
