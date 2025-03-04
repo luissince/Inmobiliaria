@@ -234,10 +234,10 @@ class LoteDetalle extends React.Component {
 
         let ciphertext = CryptoJS.AES.encrypt(JSON.stringify(data), 'key-report-inmobiliaria').toString();
         let params = new URLSearchParams({ "params": ciphertext });
-        window.open(import.meta.env.VITE_APP_URL+"/api/lote/replotedetalle?" + params, "_blank");
+        window.open(import.meta.env.VITE_APP_END_POINT+"/api/lote/replotedetalle?" + params, "_blank");
 
         //Despliegue 
-        // window.open(import.meta.env.VITE_APP_URL+"/api/lote/replotedetalle?idLote=" + this.state.idLote + "&idSede=SD0001", "_blank");
+        // window.open(import.meta.env.VITE_APP_END_POINT+"/api/lote/replotedetalle?idLote=" + this.state.idLote + "&idSede=SD0001", "_blank");
 
         //Desarrollo
         // try {

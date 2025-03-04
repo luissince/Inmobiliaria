@@ -134,7 +134,7 @@ class Creditos extends React.Component {
 
         let ciphertext = CryptoJS.AES.encrypt(JSON.stringify(data), 'key-report-inmobiliaria').toString();
         let params = new URLSearchParams({ "params": ciphertext });
-        window.open(import.meta.env.VITE_APP_URL+"/api/factura/repcreditolote?" + params, "_blank");
+        window.open(import.meta.env.VITE_APP_END_POINT+"/api/factura/repcreditolote?" + params, "_blank");
     }
 
     onEventCobros = (item) => {

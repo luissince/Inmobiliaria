@@ -167,7 +167,7 @@ class CobroDetalle extends React.Component {
 
         let ciphertext = CryptoJS.AES.encrypt(JSON.stringify(data), 'key-report-inmobiliaria').toString();
         let params = new URLSearchParams({ "params": ciphertext });
-        window.open(import.meta.env.VITE_APP_URL+"/api/cobro/repcomprobante?" + params, "_blank");
+        window.open(import.meta.env.VITE_APP_END_POINT+"/api/cobro/repcomprobante?" + params, "_blank");
     }
 
     onEventMatricial() {
@@ -178,7 +178,7 @@ class CobroDetalle extends React.Component {
 
         let ciphertext = CryptoJS.AES.encrypt(JSON.stringify(data), 'key-report-inmobiliaria').toString();
         let params = new URLSearchParams({ "params": ciphertext });
-        window.open(import.meta.env.VITE_APP_URL+"/api/cobro/repcomprobantematricial?" + params, "_blank");
+        window.open(import.meta.env.VITE_APP_END_POINT+"/api/cobro/repcomprobantematricial?" + params, "_blank");
     }
 
     render() {

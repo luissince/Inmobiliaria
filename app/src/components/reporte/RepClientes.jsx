@@ -133,7 +133,7 @@ class RepClientes extends React.Component {
 
         let ciphertext = CryptoJS.AES.encrypt(JSON.stringify(data), 'key-report-inmobiliaria').toString();
         let params = new URLSearchParams({ "params": ciphertext });
-        window.open(import.meta.env.VITE_APP_URL+"/api/cliente/repcliente?" + params, "_blank");
+        window.open(import.meta.env.VITE_APP_END_POINT+"/api/cliente/repcliente?" + params, "_blank");
     }
 
     async onEventExcelCobro() {
@@ -182,7 +182,7 @@ class RepClientes extends React.Component {
 
         let ciphertext = CryptoJS.AES.encrypt(JSON.stringify(data), 'key-report-inmobiliaria').toString();
         let params = new URLSearchParams({ "params": ciphertext });
-        window.open(import.meta.env.VITE_APP_URL+"/api/cliente/repdeudas?" + params, "_blank");
+        window.open(import.meta.env.VITE_APP_END_POINT+"/api/cliente/repdeudas?" + params, "_blank");
     }
 
     async onEventExcelDeudas() {
@@ -220,7 +220,7 @@ class RepClientes extends React.Component {
         }
         let ciphertext = CryptoJS.AES.encrypt(JSON.stringify(data), 'key-report-inmobiliaria').toString();
         let params = new URLSearchParams({ "params": ciphertext });
-        window.open(import.meta.env.VITE_APP_URL+"/api/cliente/replistarsociosporfecha?" + params, "_blank");
+        window.open(import.meta.env.VITE_APP_END_POINT+"/api/cliente/replistarsociosporfecha?" + params, "_blank");
     }
 
     async onEventExcelRegistro() {

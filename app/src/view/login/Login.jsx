@@ -157,7 +157,7 @@ class Login extends React.Component {
   };
 
   onEventRecuperar = () => {
-    window.open(import.meta.env.VITE_APP_URL+"/api/login/report", "_blank");
+    window.open(import.meta.env.VITE_APP_END_POINT+"/api/login/report", "_blank");
   };
 
   handleChangeUsuario = (event) => {
