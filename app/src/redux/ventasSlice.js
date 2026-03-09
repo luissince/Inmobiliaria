@@ -30,11 +30,8 @@ const ventasSlice = createSlice({
             return { ...state, ...action.payload };
         }
     },
-
     extraReducers: (builder) => {
         builder.addCase(signOut, () => initialState);
-    },
-    extraReducers: (builder) => {
         builder.addCase(closeProject, () => initialState);
     },
 });

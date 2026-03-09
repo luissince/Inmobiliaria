@@ -14,8 +14,6 @@ const notificationSlice = createSlice({
         },
         extraReducers: (builder) => {
             builder.addCase(signOut, () => initialState);
-        },
-        extraReducers: (builder) => {
             builder.addCase(closeProject, () => initialState);
         },
     },
