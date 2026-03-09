@@ -10,18 +10,42 @@ class Paginacion extends React.Component {
     this.pageBound = 3;
   }
 
+  setBounds = (state) => {
+    if (!state) return;
+
+    this.upperPageBound = state.upperPageBound ?? this.upperPageBound;
+    this.lowerPageBound = state.lowerPageBound ?? this.lowerPageBound;
+    this.isPrevBtnActive = state.isPrevBtnActive ?? this.isPrevBtnActive;
+    this.isNextBtnActive = state.isNextBtnActive ?? this.isNextBtnActive;
+    this.pageBound = state.pageBound ?? this.pageBound;
+
+    this.forceUpdate();
+  };
+
+  getBounds = () => {
+    return {
+      upperPageBound: this.upperPageBound,
+      lowerPageBound: this.lowerPageBound,
+      isPrevBtnActive: this.isPrevBtnActive,
+      isNextBtnActive: this.isNextBtnActive,
+      pageBound: this.pageBound,
+    };
+  };
+
   setPrevAndNextBtnClass = async (listid) => {
+    const { totalPaginacion } = this.props;
+
     this.isNextBtnActive = "disabled";
     this.isPrevBtnActive = "disabled";
 
     if (
-      this.props.totalPaginacion === listid &&
-      this.props.totalPaginacion > 1
+      totalPaginacion === listid &&
+      totalPaginacion > 1
     ) {
       this.isPrevBtnActive = "";
-    } else if (listid === 1 && this.props.totalPaginacion > 1) {
+    } else if (listid === 1 && totalPaginacion > 1) {
       this.isNextBtnActive = "";
-    } else if (this.props.totalPaginacion > 1) {
+    } else if (totalPaginacion > 1) {
       this.isNextBtnActive = "";
       this.isPrevBtnActive = "";
     }
@@ -32,7 +56,7 @@ class Paginacion extends React.Component {
   handleClick = async (event) => {
     if (this.props.loading) return;
 
-    let listid = parseInt(event.target.id);
+    let listid = parseInt(event.currentTarget.id);
     this.setPrevAndNextBtnClass(listid);
   };
 
@@ -79,7 +103,13 @@ class Paginacion extends React.Component {
   };
 
   render() {
-    if (this.props.restart) {
+    const {
+      paginacion,
+      totalPaginacion,
+      restart
+    } = this.props;
+
+    if (restart) {
       this.upperPageBound = 3;
       this.lowerPageBound = 0;
       this.isPrevBtnActive = "disabled";
@@ -88,12 +118,12 @@ class Paginacion extends React.Component {
     }
 
     const pageNumbers = [];
-    for (let i = 1; i <= this.props.totalPaginacion; i++) {
+    for (let i = 1; i <= totalPaginacion; i++) {
       pageNumbers.push(i);
     }
 
     const renderPageNumbers = pageNumbers.map((number, index) => {
-      if (number === 1 && this.props.paginacion === 1) {
+      if (number === 1 && paginacion === 1) {
         return (
           <li key={index} className="page-item active" aria-current="page">
             <span className="page-link">{number}</span>
@@ -106,9 +136,9 @@ class Paginacion extends React.Component {
         return (
           <li
             key={index}
-            className={`page-item ${number === this.props.paginacion ? "active" : ""}`}
+            className={`page-item ${number === paginacion ? "active" : ""}`}
           >
-            {number === this.props.paginacion ? (
+            {number === paginacion ? (
               <span id={number} className="page-link">
                 {number}
               </span>
@@ -154,7 +184,7 @@ class Paginacion extends React.Component {
 
     let renderPrevBtn = null;
     if (this.isPrevBtnActive === "disabled" ||
-      this.props.totalPaginacion <= 1) {
+      totalPaginacion <= 1) {
       renderPrevBtn = (
         <li className="page-item disabled">
           <span className="page-link"> Ante. </span>
@@ -174,7 +204,7 @@ class Paginacion extends React.Component {
     let renderNextBtn = null;
     if (
       this.isNextBtnActive === "disabled" ||
-      this.props.totalPaginacion <= 1
+      totalPaginacion <= 1
     ) {
       renderNextBtn = (
         <li className="page-item disabled">

@@ -14,14 +14,13 @@ import {
 } from '../../helper/Tools';
 import { connect } from 'react-redux';
 import Paginacion from '../../helper/Paginacion';
+import { setVentasState } from '../../redux/ventasSlice';
 
 class Ventas extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            loading: false,
-            lista: [],
-            restart: false,
+            ...props.ventasState,
 
             add: statePrivilegio(this.props.token.userToken.menus[2].submenu[1].privilegio[0].estado),
             view: statePrivilegio(this.props.token.userToken.menus[2].submenu[1].privilegio[1].estado),
@@ -29,49 +28,73 @@ class Ventas extends React.Component {
 
             idProyecto: this.props.token.project.idProyecto,
             idUsuario: this.props.token.userToken.idUsuario,
-
-            opcion: 0,
-            paginacion: 0,
-            totalPaginacion: 0,
-            filasPorPagina: 10,
-            messageTable: 'Cargando información...',
-            messagePaginacion: 'Mostranto 0 de 0 Páginas'
         }
-        this.refTxtSearch = React.createRef();
 
-        this.abortControllerTable = new AbortController();
+        this.refPaginacion = React.createRef();
+
+        this.abortControllerTable = null;
     }
 
-    setStateAsync(state) {
+    setStateAsync = (newState) => {
         return new Promise((resolve) => {
-            this.setState(state, resolve)
+            this.setState((prevState) => {
+
+                const nextState = { ...prevState, ...newState };
+
+                const paginacionState = this.refPaginacion.current?.getBounds();
+
+                this.props.setVentasState({
+                    ...nextState,
+                    paginacionState
+                });
+
+                resolve(nextState);
+
+                return newState;
+            });
         });
-    }
+    };
 
     componentDidMount() {
-        this.loadInit();
+        const pagState = this.props.ventasState.paginacionState;
+
+        if (pagState && this.refPaginacion.current) {
+            this.refPaginacion.current.setBounds(pagState);
+        }
+
+        if (!this.state.lista?.length) {
+            this.loadInit();
+        }
     }
 
     componentWillUnmount() {
-        this.abortControllerTable.abort();
+        this.abortControllerTable?.abort();
     }
 
     loadInit = async () => {
         if (this.state.loading) return;
 
-        await this.setStateAsync({ paginacion: 1, restart: true });
-        this.fillTable(0, "");
-        await this.setStateAsync({ opcion: 0 });
+        await this.setStateAsync({
+            paginacion: 1,
+            restart: true,
+            opcion: 0
+        });
+
+        this.fillTable(0);
     }
 
     async searchText(text) {
-        if (this.state.loading) return;
+        const value = text.trim();
 
-        if (text.trim().length === 0) return;
+        if (this.state.loading || !value) return;
 
-        await this.setStateAsync({ paginacion: 1, restart: false });
-        this.fillTable(1, text.trim());
-        await this.setStateAsync({ opcion: 1 });
+        await this.setStateAsync({
+            paginacion: 1,
+            restart: false,
+            opcion: 1
+        });
+
+        this.fillTable(1, value);
     }
 
     paginacionContext = async (listid) => {
@@ -80,22 +103,21 @@ class Ventas extends React.Component {
     }
 
     onEventPaginacion = () => {
-        switch (this.state.opcion) {
-            case 0:
-                this.fillTable(0, "");
-                break;
-            case 1:
-                this.fillTable(1, this.refTxtSearch.current.value);
-                break;
-            default: this.fillTable(0, "");
-        }
+        const search = this.state.opcion === 1
+            ? this.state.search
+            : "";
+
+        this.fillTable(this.state.opcion, search);
     }
 
-    fillTable = async (opcion, buscar) => {
+    fillTable = async (opcion, buscar = "") => {
+        this.abortControllerTable?.abort();
+        this.abortControllerTable = new AbortController();
+
         try {
             await this.setStateAsync({ loading: true, lista: [], messageTable: "Cargando información...", messagePaginacion: "Mostranto 0 de 0 Páginas" });
 
-            const result = await axios.get(import.meta.env.VITE_APP_END_POINT+'/api/factura/list', {
+            const result = await axios.get(import.meta.env.VITE_APP_END_POINT + '/api/factura/list', {
                 signal: this.abortControllerTable.signal,
                 params: {
                     "opcion": opcion,
@@ -106,8 +128,8 @@ class Ventas extends React.Component {
                 }
             });
 
-            let totalPaginacion = parseInt(Math.ceil((parseFloat(result.data.total) / this.state.filasPorPagina)));
-            let messagePaginacion = `Mostrando ${result.data.result.length} de ${totalPaginacion} Páginas`;
+            const totalPaginacion = Math.ceil(result.data.total / this.state.filasPorPagina);
+            let messagePaginacion = `Mostrando ${result.data.result.length} registros | ${totalPaginacion} páginas`;
 
             await this.setStateAsync({
                 loading: false,
@@ -116,7 +138,7 @@ class Ventas extends React.Component {
                 messagePaginacion: messagePaginacion
             });
         } catch (error) {
-            if (error.message !== "canceled") {
+            if (error.code !== "ERR_CANCELED") {
                 await this.setStateAsync({
                     loading: false,
                     lista: [],
@@ -125,6 +147,8 @@ class Ventas extends React.Component {
                     messagePaginacion: "Mostranto 0 de 0 Páginas",
                 });
             }
+        } finally {
+            this.abortControllerTable = null;
         }
     }
 
@@ -137,7 +161,7 @@ class Ventas extends React.Component {
             if (value) {
                 try {
                     ModalAlertInfo("Venta", "Procesando información...");
-                    let result = await axios.delete(import.meta.env.VITE_APP_END_POINT+'/api/factura/anular', {
+                    let result = await axios.delete(import.meta.env.VITE_APP_END_POINT + '/api/factura/anular', {
                         params: {
                             "idVenta": idVenta,
                             "idUsuario": this.state.idUsuario
@@ -179,8 +203,11 @@ class Ventas extends React.Component {
                                     type="text"
                                     className="form-control"
                                     placeholder="Buscar..."
-                                    ref={this.refTxtSearch}
-                                    onKeyUp={(event) => keyUpSearch(event, () => this.searchText(event.target.value))}
+                                    value={this.state.search}
+                                    onChange={(e) => this.setStateAsync({ search: e.target.value })}
+                                    onKeyUp={(event) =>
+                                        keyUpSearch(event, () => this.searchText(this.state.search))
+                                    }
                                 />
                             </div>
                         </div>
@@ -356,6 +383,7 @@ class Ventas extends React.Component {
                             <nav aria-label="Page navigation example">
                                 <ul className="pagination justify-content-end">
                                     <Paginacion
+                                        ref={this.refPaginacion}
                                         loading={this.state.loading}
                                         totalPaginacion={this.state.totalPaginacion}
                                         paginacion={this.state.paginacion}
@@ -374,8 +402,13 @@ class Ventas extends React.Component {
 
 const mapStateToProps = (state) => {
     return {
-        token: state.principal
+        token: state.principal,
+        ventasState: state.ventas
     }
-}
+};
 
-export default connect(mapStateToProps, null)(Ventas);
+const mapDispatchToProps = {
+    setVentasState
+};
+
+export default connect(mapStateToProps, mapDispatchToProps)(Ventas);

@@ -452,6 +452,7 @@ class RepLote {
                 rows: content
             };
 
+            
             doc.table(table, {
                 prepareHeader: () => doc.font("Helvetica-Bold").fontSize(h3),
                 prepareRow: (row, indexColumn, indexRow, rectRow, rectCell) => {
@@ -462,7 +463,7 @@ class RepLote {
                 columnSpacing: 5,
                 columnsSize: [20, 81, 65, 71, 55, 55, 50, 50, 50, 50, 55, 55, 55],//712
                 x: doc.x,
-                y: doc.y + 15,
+                y: doc.y + 25,
                 width: doc.page.width - doc.options.margins.left - doc.options.margins.right
             });
 

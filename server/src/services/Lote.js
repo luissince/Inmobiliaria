@@ -1,13 +1,14 @@
 const Conexion = require('../database/Conexion');
 const { sendSuccess, sendError, sendClient, sendSave } = require('../tools/Message');
-const { currentDate, currentTime } = require('../tools/Tools');
+const { currentDate, currentTime, generateAlphanumericCode, generateNumericCode } = require('../tools/Tools');
 const conec = new Conexion();
 
 class Lote {
 
     async list(req) {
         try {
-            const lista = await conec.query(`SELECT 
+            const lista = await conec.query(`
+            SELECT 
                 l.idLote,
                 l.descripcion,
                 m.nombre as manzana,
@@ -18,16 +19,16 @@ class Lote {
                 l.costadoIzquierdo,
                 l.medidaFondo,
                 l.areaLote
-                FROM lote AS l INNER JOIN manzana AS m 
-                ON l.idManzana = m.idManzana 
-                WHERE
+            FROM 
+                lote AS l INNER JOIN manzana AS m ON l.idManzana = m.idManzana 
+            WHERE
                 ? = 0 AND m.idProyecto = ?
                 OR
                 ? = 1 AND m.idProyecto = ? AND l.descripcion LIKE CONCAT(?,'%') AND m.nombre LIKE CONCAT('%', ?,'%')
                 OR
                 ? = 1 AND m.idProyecto = ? AND m.nombre LIKE CONCAT(?,'%') AND m.nombre LIKE CONCAT('%', ?,'%')
 
-                LIMIT ?,?`, [
+            LIMIT ?,?`, [
                 parseInt(req.query.opcion),
                 req.query.idProyecto,
 
@@ -52,10 +53,14 @@ class Lote {
                 }
             });
 
-            const total = await conec.query(`SELECT COUNT(*) AS Total 
-                FROM lote AS l INNER JOIN manzana AS m 
-                ON l.idManzana = m.idManzana 
-                WHERE
+            const total = await conec.query(`
+            SELECT 
+                COUNT(*) AS Total 
+            FROM 
+                lote AS l 
+            INNER JOIN 
+                manzana AS m ON l.idManzana = m.idManzana 
+            WHERE
                 ? = 0 AND m.idProyecto = ?
                 OR
                 ? = 1 AND m.idProyecto = ? AND l.descripcion LIKE CONCAT(?,'%')
@@ -83,36 +88,16 @@ class Lote {
         try {
             connection = await conec.beginTransaction();
 
+            const date = currentDate();
+            const time = currentTime();
+
             if (req.body.estado === '3') {
                 await conec.rollback(connection);
                 return "No se puede usar el estado vendido al insertar un lote, cambie los datos e intente nuevamente.";
             }
 
-            let result = await conec.execute(connection, 'SELECT idLote FROM lote');
-            let idLote = "";
-            if (result.length != 0) {
-
-                let quitarValor = result.map(function (item) {
-                    return parseInt(item.idLote.replace("LT", ''));
-                });
-
-                let valorActual = Math.max(...quitarValor);
-                let incremental = valorActual + 1;
-                let codigoGenerado = "";
-                if (incremental <= 9) {
-                    codigoGenerado = 'LT000' + incremental;
-                } else if (incremental >= 10 && incremental <= 99) {
-                    codigoGenerado = 'LT00' + incremental;
-                } else if (incremental >= 100 && incremental <= 999) {
-                    codigoGenerado = 'LT0' + incremental;
-                } else {
-                    codigoGenerado = 'LT' + incremental;
-                }
-
-                idLote = codigoGenerado;
-            } else {
-                idLote = "LT0001";
-            }
+            const listLote = await conec.execute(connection, `SELECT idLote FROM lote`);
+            const idLote = generateAlphanumericCode("LT0001", listLote, 'idLote');
 
             await conec.execute(connection, `INSERT INTO lote(
                 idLote, 
@@ -160,10 +145,10 @@ class Lote {
                 req.body.limiteIzquierdo,
                 req.body.limitePosterior,
                 req.body.ubicacionLote,
-                currentDate(),
-                currentTime(),
-                currentDate(),
-                currentTime(),
+                date,
+                time,
+                date,
+                time,
                 req.body.idUsuario,
             ])
 
@@ -181,8 +166,18 @@ class Lote {
         let connection = null;
         try {
             connection = await conec.beginTransaction();
-            const asociados = await conec.query(`SELECT * FROM asociado 
-                WHERE idCliente = ?`, [
+
+            const date = currentDate();
+            const time = currentTime();
+
+            const asociados = await conec.query(`
+            SELECT 
+                * 
+            FROM 
+                asociado 
+            WHERE 
+                idVenta = ? AND idCliente = ?`, [
+                req.body.idVenta,
                 req.body.idCliente
             ]);
 
@@ -191,24 +186,30 @@ class Lote {
                 return "cliente";
             }
 
-            await conec.execute(connection, `UPDATE asociado SET estado = 0 
-                WHERE idVenta = ?`, [
+            await conec.execute(connection, `
+            UPDATE 
+                asociado 
+            SET 
+                estado = 0 
+            WHERE 
+                idVenta = ?`, [
                 req.body.idVenta
             ]);
 
-            await conec.execute(connection, `INSERT INTO asociado(
-                idVenta ,
+            await conec.execute(connection, `
+            INSERT INTO asociado(
+                idVenta,
                 idCliente,
                 estado,
                 fecha,
                 hora,
-                idUsuario) 
-                VALUES(?,?,?,?,?,?)`, [
+                idUsuario
+            ) VALUES(?,?,?,?,?,?)`, [
                 req.body.idVenta,
                 req.body.idCliente,
                 1,
-                currentDate(),
-                currentTime(),
+                date,
+                time,
                 req.body.idUsuario
             ]);
 
@@ -218,69 +219,35 @@ class Lote {
             //     req.query.idClienteOld,
             // ]);
 
-            let result = await conec.execute(connection, 'SELECT idTraspado FROM traspaso');
-            let idTraspado = "";
-            if (result.length != 0) {
-                let quitarValor = result.map(function (item) {
-                    return parseInt(item.idTraspado.replace("TR", ''));
-                });
+            const listTraspaso = await conec.execute(connection, `SELECT idTraspado FROM traspaso`);
+            const idTraspado = generateAlphanumericCode("TR0001", listTraspaso, 'idTraspado');
 
-                let valorActual = Math.max(...quitarValor);
-                let incremental = valorActual + 1;
-                let codigoGenerado = "";
-                if (incremental <= 9) {
-                    codigoGenerado = 'TR000' + incremental;
-                } else if (incremental >= 10 && incremental <= 99) {
-                    codigoGenerado = 'TR00' + incremental;
-                } else if (incremental >= 100 && incremental <= 999) {
-                    codigoGenerado = 'TR0' + incremental;
-                } else {
-                    codigoGenerado = 'TR' + incremental;
-                }
-
-                idTraspado = codigoGenerado;
-            } else {
-                idTraspado = "TR0001";
-            }
-
-            await conec.execute(connection, `INSERT INTO traspaso(
+            await conec.execute(connection, `
+            INSERT INTO traspaso(
                 idTraspado,
                 idVenta,
                 idClienteNuevo,
                 idClienteAntiguo,
                 fecha,
                 hora,
-                idUsuario) 
-                VALUES(?,?,?,?,?,?,?)`, [
+                idUsuario
+            ) VALUES(?,?,?,?,?,?,?)`, [
                 idTraspado,
                 req.body.idVenta,
                 req.body.idCliente,
                 req.body.idClienteOld,
-                currentDate(),
-                currentTime(),
+                date,
+                time,
                 req.body.idUsuario
             ]);
 
-            const alta = await conec.execute(connection, `SELECT * FROM alta
-                WHERE idCliente = ?`, [
+            const alta = await conec.execute(connection, `SELECT * FROM alta WHERE idCliente = ?`, [
                 req.body.idCliente
             ]);
 
             if (alta.length === 0) {
-                let resultAlta = await conec.execute(connection, 'SELECT idAlta FROM alta');
-                let idAlta = 0;
-                if (resultAlta.length != 0) {
-                    let quitarValor = resultAlta.map(function (item) {
-                        return parseInt(item.idAlta);
-                    });
-
-                    let valorActual = Math.max(...quitarValor);
-                    let incremental = valorActual + 1;
-
-                    idAlta = incremental;
-                } else {
-                    idAlta = 1;
-                }
+                const listAlta = await conec.execute(connection, `SELECT idAlta FROM alta`);
+                const idAlta = generateNumericCode(1, listAlta, 'idAlta');
 
                 await conec.execute(connection, `INSERT INTO alta(
                     idAlta ,
@@ -293,33 +260,25 @@ class Lote {
                     idAlta,
                     req.body.idCliente,
                     req.body.idProyecto,
-                    currentDate(),
-                    currentTime(),
+                    date,
+                    time,
                     req.body.idUsuario,
                 ]);
             }
 
-            await conec.execute(connection, `UPDATE venta 
-                SET idCliente = ?
-                WHERE idVenta = ?`, [
+            await conec.execute(connection, `
+            UPDATE 
+                venta 
+            SET 
+                idCliente = ?
+            WHERE 
+                idVenta = ?`, [
                 req.body.idCliente,
                 req.body.idVenta
             ]);
 
-            let resultAuditoria = await conec.execute(connection, 'SELECT idAuditoria FROM auditoria');
-            let idAuditoria = 0;
-            if (resultAuditoria.length != 0) {
-                let quitarValor = resultAuditoria.map(function (item) {
-                    return parseInt(item.idAuditoria);
-                });
-
-                let valorActual = Math.max(...quitarValor);
-                let incremental = valorActual + 1;
-
-                idAuditoria = incremental;
-            } else {
-                idAuditoria = 1;
-            }
+            const listAuditoria = await conec.execute(connection, `SELECT idAuditoria FROM auditoria`);
+            const idAuditoria = generateNumericCode(1, listAuditoria, 'idAuditoria');
 
             await conec.execute(connection, `INSERT INTO auditoria(
                 idAuditoria,
@@ -332,8 +291,8 @@ class Lote {
                 idAuditoria,
                 idTraspado,
                 `TRASPASO`,
-                currentDate(),
-                currentTime(),
+                date,
+                time,
                 req.body.idUsuario
             ]);
 
@@ -358,103 +317,80 @@ class Lote {
         try {
             connection = await conec.beginTransaction();
 
-            await conec.execute(connection, `UPDATE asociado SET estado = 0 
-            WHERE idVenta = ?`, [
+            const date = currentDate();
+            const time = currentTime();
+
+            await conec.execute(connection, `UPDATE asociado SET estado = 0 WHERE idVenta = ?`, [
                 req.body.idVenta
             ]);
 
-            await conec.execute(connection, `UPDATE asociado 
-            SET estado = 1 
-            WHERE idVenta = ? AND idCliente = ?`, [
+            await conec.execute(connection, `
+            UPDATE 
+                asociado 
+            SET 
+                estado = 1 
+            WHERE 
+                idVenta = ? AND idCliente = ?`, [
                 req.body.idVenta,
                 req.body.idCliente,
             ]);
 
-            let result = await conec.execute(connection, 'SELECT idTraspado FROM traspaso');
-            let idTraspado = "";
-            if (result.length != 0) {
-                let quitarValor = result.map(function (item) {
-                    return parseInt(item.idTraspado.replace("TR", ''));
-                });
+            const listTraspaso = await conec.execute(connection, `SELECT idTraspado FROM traspaso`);
+            const idTraspado = generateAlphanumericCode("TR0001", listTraspaso, 'idTraspado');
 
-                let valorActual = Math.max(...quitarValor);
-                let incremental = valorActual + 1;
-                let codigoGenerado = "";
-                if (incremental <= 9) {
-                    codigoGenerado = 'TR000' + incremental;
-                } else if (incremental >= 10 && incremental <= 99) {
-                    codigoGenerado = 'TR00' + incremental;
-                } else if (incremental >= 100 && incremental <= 999) {
-                    codigoGenerado = 'TR0' + incremental;
-                } else {
-                    codigoGenerado = 'TR' + incremental;
-                }
-
-                idTraspado = codigoGenerado;
-            } else {
-                idTraspado = "TR0001";
-            }
-
-            await conec.execute(connection, `INSERT INTO traspaso(
+            await conec.execute(connection, `
+            INSERT INTO traspaso(
                 idTraspado,
                 idVenta,
                 idClienteNuevo,
                 idClienteAntiguo,
                 fecha,
                 hora,
-                idUsuario) 
-                VALUES(?,?,?,?,?,?,?)`, [
+                idUsuario
+            ) VALUES(?,?,?,?,?,?,?)`, [
                 idTraspado,
                 req.body.idVenta,
                 req.body.idCliente,
                 req.body.idCliente,
-                currentDate(),
-                currentTime(),
+                date,
+                time,
                 req.body.idUsuario
             ]);
 
-            await conec.execute(connection, `UPDATE venta 
-            SET idCliente = ?
-            WHERE idVenta = ?`, [
+            await conec.execute(connection, `
+            UPDATE 
+                venta 
+            SET 
+                idCliente = ?
+            WHERE 
+                idVenta = ?`, [
                 req.body.idCliente,
                 req.body.idVenta
             ]);
 
-            let resultAuditoria = await conec.execute(connection, 'SELECT idAuditoria FROM auditoria');
-            let idAuditoria = 0;
-            if (resultAuditoria.length != 0) {
-                let quitarValor = resultAuditoria.map(function (item) {
-                    return parseInt(item.idAuditoria);
-                });
+            const listAuditoria = await conec.execute(connection, `SELECT idAuditoria FROM auditoria`);
+            const idAuditoria = generateNumericCode(1, listAuditoria, 'idAuditoria');
 
-                let valorActual = Math.max(...quitarValor);
-                let incremental = valorActual + 1;
-
-                idAuditoria = incremental;
-            } else {
-                idAuditoria = 1;
-            }
-
-            await conec.execute(connection, `INSERT INTO auditoria(
+            await conec.execute(connection, `
+            INSERT INTO auditoria(
                 idAuditoria,
                 idProcedencia,
                 descripcion,
                 fecha,
                 hora,
-                idUsuario) 
-                VALUES(?,?,?,?,?,?)`, [
+                idUsuario
+            ) VALUES(?,?,?,?,?,?)`, [
                 idAuditoria,
                 idTraspado,
                 `RESTABLECER TRASPADO`,
-                currentDate(),
-                currentTime(),
+                date,
+                time,
                 req.body.idUsuario
             ]);
 
             await conec.commit(connection);
             return "insert";
         } catch (ex) {
-            console.log(ex)
             if (connection != null) {
                 await conec.rollback(connection);
             }
@@ -468,13 +404,11 @@ class Lote {
         try {
             connection = await conec.beginTransaction();
 
-            await conec.execute(connection, `UPDATE lote SET estado = 1 
-            WHERE idLote = ?`, [
+            await conec.execute(connection, `UPDATE lote SET estado = 1 WHERE idLote = ?`, [
                 req.body.idLote
             ]);
 
-            await conec.execute(connection, `UPDATE venta SET estado = 4 
-            WHERE idVenta = ?`, [
+            await conec.execute(connection, `UPDATE venta SET estado = 4 WHERE idVenta = ?`, [
                 req.body.idVenta
             ]);
 
@@ -511,6 +445,9 @@ class Lote {
         try {
             connection = await conec.beginTransaction();
 
+            const date = currentDate();
+            const time = currentTime();
+
             let lote = await conec.execute(connection, `SELECT estado FROM lote
             WHERE idLote = ? `, [
                 req.body.idLote
@@ -539,8 +476,7 @@ class Lote {
                     fupdate = ?,
                     hupdate = ?,
                     idUsuario = ?
-                    WHERE idLote = ?
-                    `, [
+                    WHERE idLote = ?`, [
                     req.body.descripcion,
                     req.body.idMedida,
                     req.body.medidaFrontal,
@@ -554,8 +490,8 @@ class Lote {
                     req.body.limiteIzquierdo,
                     req.body.limitePosterior,
                     req.body.ubicacionLote,
-                    currentDate(),
-                    currentTime(),
+                    date,
+                    time,
                     req.body.idUsuario,
                     req.body.idLote
                 ]);
@@ -585,8 +521,7 @@ class Lote {
                     fupdate = ?,
                     hupdate = ?,
                     idUsuario = ?
-                    WHERE idLote = ?
-                    `, [
+                    WHERE idLote = ?`, [
                     req.body.idManzana,
                     req.body.idConcepto,
                     req.body.descripcion,
@@ -605,8 +540,8 @@ class Lote {
                     req.body.limiteIzquierdo,
                     req.body.limitePosterior,
                     req.body.ubicacionLote,
-                    currentDate(),
-                    currentTime(),
+                    date,
+                    time,
                     req.body.idUsuario,
                     req.body.idLote,
                 ])
@@ -653,7 +588,8 @@ class Lote {
     async detalle(req) {
         try {
 
-            const cabecera = await conec.query(`SELECT 
+            const cabecera = await conec.query(`
+            SELECT 
                 l.idLote,
                 m.nombre as manzana,
                 l.descripcion as lote,
@@ -678,34 +614,46 @@ class Lote {
                 IFNULL(l.limitePosterior,'') AS limitePosterior,
                 IFNULL(l.ubicacionLote,'') AS ubicacionLote
 
-                FROM lote AS l
-                INNER JOIN manzana AS m  ON l.idManzana = m.idManzana
-                WHERE l.idLote = ?`, [
+            FROM 
+                lote AS l
+            INNER JOIN 
+                manzana AS m  ON l.idManzana = m.idManzana
+            WHERE 
+                l.idLote = ?`, [
                 req.query.idLote,
             ]);
 
-            const venta = await conec.query(`SELECT 
-            v.idVenta,
-            v.idCliente
-            FROM venta AS v 
-            INNER JOIN ventaDetalle AS vd ON v.idVenta = vd.idVenta
-            WHERE vd.idLote = ? AND v.estado IN (1,2)`, [
+            const venta = await conec.query(`
+            SELECT 
+                v.idVenta,
+                v.idCliente
+            FROM 
+                venta AS v 
+            INNER JOIN 
+                ventaDetalle AS vd ON v.idVenta = vd.idVenta
+            WHERE 
+                vd.idLote = ? AND v.estado IN (1,2)`, [
                 req.query.idLote,
             ])
 
             if (venta.length > 0) {
-                const socios = await conec.query(`SELECT 
+                const socios = await conec.query(`
+                SELECT 
                     c.idCliente ,
                     c.documento,
                     c.informacion,
                     a.estado
-                    FROM asociado AS a
-                    INNER JOIN cliente AS c ON a.idCliente = c.idCliente
-                    WHERE a.idVenta = ?`, [
+                FROM 
+                    asociado AS a
+                INNER JOIN 
+                    cliente AS c ON a.idCliente = c.idCliente
+                WHERE 
+                    a.idVenta = ?`, [
                     venta[0].idVenta
                 ]);
 
-                const detalle = await conec.query(`SELECT 
+                const detalle = await conec.query(`
+                SELECT 
                     c.idCobro,
                     co.nombre as comprobante,
                     c.serie,
@@ -723,23 +671,35 @@ class Lote {
                     DATE_FORMAT(c.fecha,'%d/%m/%Y') as fecha, 
                     c.hora,
                     IFNULL(SUM(cd.precio*cd.cantidad),ROUND(SUM(cv.precio), 2)) AS monto
-                    FROM cobro AS c
-                    INNER JOIN cliente AS cl ON c.idCliente = cl.idCliente
-                    INNER JOIN banco AS b ON c.idBanco = b.idBanco
-                    INNER JOIN moneda AS m ON c.idMoneda = m.idMoneda 
-                    INNER JOIN comprobante AS co ON co.idComprobante = c.idComprobante
-                    LEFT JOIN cobroDetalle AS cd ON c.idCobro = cd.idCobro
-                    LEFT JOIN concepto AS cn ON cd.idConcepto = cn.idConcepto 
-                    LEFT JOIN cobroVenta AS cv ON cv.idCobro = c.idCobro 
-                    LEFT JOIN venta AS v ON cv.idVenta = v.idVenta 
-                    LEFT JOIN comprobante AS cp ON v.idComprobante = cp.idComprobante
-                    LEFT JOIN notaCredito AS nc ON c.idCobro = nc.idCobro AND nc.estado = 1
+                FROM 
+                    cobro AS c
+                INNER JOIN 
+                    cliente AS cl ON c.idCliente = cl.idCliente
+                INNER JOIN 
+                    banco AS b ON c.idBanco = b.idBanco
+                INNER JOIN 
+                    moneda AS m ON c.idMoneda = m.idMoneda 
+                INNER JOIN 
+                    comprobante AS co ON co.idComprobante = c.idComprobante
+                LEFT JOIN 
+                    cobroDetalle AS cd ON c.idCobro = cd.idCobro
+                LEFT JOIN 
+                    concepto AS cn ON cd.idConcepto = cn.idConcepto 
+                LEFT JOIN 
+                    cobroVenta AS cv ON cv.idCobro = c.idCobro 
+                LEFT JOIN 
+                    venta AS v ON cv.idVenta = v.idVenta 
+                LEFT JOIN 
+                    comprobante AS cp ON v.idComprobante = cp.idComprobante
+                LEFT JOIN 
+                    notaCredito AS nc ON c.idCobro = nc.idCobro AND nc.estado = 1
 
-                    WHERE 
+                WHERE 
                     c.idProcedencia = ? AND c.estado = 1 AND nc.idNotaCredito IS NULL
                     OR 
                     c.idProcedencia = ? AND c.estado = 1 AND nc.idNotaCredito IS NULL
-                    GROUP BY c.idCobro`, [
+                GROUP BY 
+                    c.idCobro`, [
                     venta[0].idVenta,
                     req.query.idLote,
                 ]);
@@ -760,14 +720,16 @@ class Lote {
 
     async listarCombo(req) {
         try {
-            let result = await conec.query(`SELECT 
-            l.idLote, 
-            l.descripcion AS nombreLote, 
-            l.precio,
-            m.nombre AS nombreManzana 
-            FROM lote AS l INNER JOIN manzana AS m 
-            ON l.idManzana = m.idManzana
-            WHERE m.idProyecto = ? AND l.estado = 1`, [
+            let result = await conec.query(`
+            SELECT 
+                l.idLote, 
+                l.descripcion AS nombreLote, 
+                l.precio,
+                m.nombre AS nombreManzana 
+            FROM 
+                lote AS l INNER JOIN manzana AS m ON l.idManzana = m.idManzana
+            WHERE 
+                m.idProyecto = ? AND l.estado = 1`, [
                 req.query.idProyecto
             ]);
             return result
@@ -779,17 +741,18 @@ class Lote {
 
     async listarFilter(req) {
         try {
-            let result = await conec.query(`SELECT 
-            l.idLote, 
-            l.descripcion AS nombreLote, 
-            l.precio,
-            m.nombre AS nombreManzana 
-            FROM lote AS l INNER JOIN manzana AS m 
-            ON l.idManzana = m.idManzana
+            let result = await conec.query(`
+            SELECT 
+                l.idLote, 
+                l.descripcion AS nombreLote, 
+                l.precio,
+                m.nombre AS nombreManzana 
+            FROM 
+                lote AS l INNER JOIN manzana AS m ON l.idManzana = m.idManzana
             WHERE 
-            m.idProyecto = ? AND l.estado = 1 AND l.descripcion LIKE CONCAT(?,'%')
-            OR
-            m.idProyecto = ? AND l.estado = 1 AND m.nombre LIKE CONCAT(?,'%')`, [
+                m.idProyecto = ? AND l.estado = 1 AND l.descripcion LIKE CONCAT(?,'%')
+                OR
+                m.idProyecto = ? AND l.estado = 1 AND m.nombre LIKE CONCAT(?,'%')`, [
                 req.query.idProyecto,
                 req.query.filtrar,
 
@@ -805,17 +768,25 @@ class Lote {
 
     async listarComboLoteCliente(req) {
         try {
-            let result = await conec.query(`SELECT 
+            let result = await conec.query(`
+            SELECT 
                 v.idVenta, 
                 l.descripcion AS lote, 
                 m.nombre AS manzana
-                FROM venta AS v
-                INNER JOIN asociado AS a ON a.idVenta = v.idVenta
-                INNER JOIN cliente AS c ON a.idCliente = c.idCliente
-                INNER JOIN ventaDetalle AS vd ON v.idVenta = vd.idVenta
-                INNER JOIN lote AS l ON l.idLote = vd.idLote
-                INNER JOIN manzana AS m ON m.idManzana = l.idManzana
-                WHERE c.idCliente = ? AND v.estado IN(1,2)`, [
+            FROM 
+                venta AS v
+            INNER JOIN 
+                asociado AS a ON a.idVenta = v.idVenta
+            INNER JOIN 
+                cliente AS c ON a.idCliente = c.idCliente
+            INNER JOIN 
+                ventaDetalle AS vd ON v.idVenta = vd.idVenta
+            INNER JOIN 
+                lote AS l ON l.idLote = vd.idLote
+            INNER JOIN 
+                manzana AS m ON m.idManzana = l.idManzana
+            WHERE 
+                c.idCliente = ? AND v.estado IN(1,2)`, [
                 req.query.idCliente
             ]);
             return result;
@@ -827,15 +798,18 @@ class Lote {
     async listaEstadoLote(req) {
         try {
 
-            const proyecto = await conec.query(`SELECT 
-            nombre,
-            ubicacion,
-            area 
-            FROM proyecto WHERE idProyecto = ?`, [
+            const proyecto = await conec.query(`
+            SELECT 
+                nombre,
+                ubicacion,
+                area 
+            FROM 
+                proyecto WHERE idProyecto = ?`, [
                 req.query.idProyecto,
             ]);
 
-            const lista = await conec.query(`SELECT 
+            const lista = await conec.query(`
+            SELECT 
                 l.idLote,
                 l.descripcion AS lote,
                 m.nombre AS manzana,
@@ -847,9 +821,9 @@ class Lote {
                 l.costadoIzquierdo,
                 l.medidaFondo,
                 l.areaLote
-                FROM lote AS l INNER JOIN manzana AS m 
-                ON l.idManzana = m.idManzana 
-                WHERE
+            FROM 
+                lote AS l INNER JOIN manzana AS m ON l.idManzana = m.idManzana 
+            WHERE
                 ? = 0 AND m.idProyecto = ?
                 OR
                 (? <> 0 AND l.estado = ? AND m.idProyecto = ?)`, [
@@ -872,9 +846,13 @@ class Lote {
         try {
             connection = await conec.beginTransaction();
 
-            await conec.execute(connection, `UPDATE ventaDetalle 
-            SET idLote = ?
-            WHERE idLote = ?`, [
+            await conec.execute(connection, `
+            UPDATE 
+                ventaDetalle 
+            SET 
+                idLote = ?
+            WHERE 
+                idLote = ?`, [
                 req.body.idLoteDestino,
                 req.body.idLoteOrigen
             ]);
@@ -886,15 +864,23 @@ class Lote {
             //     req.body.idLoteOrigen
             // ]);
 
-            await conec.execute(connection, `UPDATE lote
-            SET estado = 1
-            WHERE idLote = ?`, [
+            await conec.execute(connection, `
+            UPDATE 
+                lote
+            SET 
+                estado = 1
+            WHERE 
+                idLote = ?`, [
                 req.body.idLoteOrigen
             ]);
 
-            await conec.execute(connection, `UPDATE lote
-            SET estado = 3
-            WHERE idLote = ?`, [
+            await conec.execute(connection, `
+            UPDATE 
+                lote
+            SET 
+                estado = 3
+            WHERE 
+                idLote = ?`, [
                 req.body.idLoteDestino
             ]);
 
@@ -911,52 +897,62 @@ class Lote {
 
     async listardeudaslote(req) {
         try {
-            const result = await conec.query(`SELECT 
-            v.idVenta, 
-            cl.idCliente,
-            cl.documento, 
-            cl.informacion, 
-            lo.descripcion AS lote,
-            ma.nombre AS manzana,
-            cm.nombre AS comprobante, 
-            v.serie, 
-            v.numeracion, 
-            (SELECT IFNULL(DATE_FORMAT(MIN(co.fecha),'%d/%m/%Y'),'') FROM cobro AS co WHERE co.idProcedencia = v.idVenta ) AS primerPago,
-            (SELECT IFNULL(p.monto,0) FROM plazo AS p WHERE p.idVenta = v.idVenta LIMIT 1) AS cuotaMensual,
-            (SELECT IFNULL(COUNT(*), 0) FROM plazo AS p WHERE p.idVenta = v.idVenta) AS cuoTotal,
-            (SELECT IFNULL(COUNT(*), 0) FROM plazo AS p WHERE p.estado = 0 AND p.idVenta = v.idVenta) AS numCuota,
-            CASE WHEN v.frecuencia = 30 THEN 'FIN DE MES' ELSE 'CADA QUINCENA' END AS frecuenciaName, 
-            CASE 
-            WHEN v.credito = 1 THEN DATE_ADD(v.fecha,interval v.frecuencia day)
-            ELSE (SELECT IFNULL(MIN(p.fecha),'') FROM plazo AS p WHERE p.estado = 0 AND p.idVenta = v.idVenta) END AS fechaPago,
-            v.fecha, 
-            v.hora, 
-            v.estado,
-            v.credito,
-            v.frecuencia,
-            m.idMoneda,
-            m.simbolo,
-            IFNULL(SUM(vd.precio*vd.cantidad),0) AS total,
-            (
-             SELECT IFNULL(ROUND(SUM(cv.precio), 2),0) 
-             FROM cobro AS c 
-             LEFT JOIN notaCredito AS nc ON c.idCobro = nc.idCobro AND nc.estado = 1
-             LEFT JOIN cobroVenta AS cv ON c.idCobro = cv.idCobro 
-             WHERE c.idProcedencia = v.idVenta AND c.estado = 1 AND nc.idNotaCredito IS NULL
-            ) AS cobrado 
-            FROM venta AS v 
-            INNER JOIN moneda AS m ON m.idMoneda = v.idMoneda
-            INNER JOIN comprobante AS cm ON v.idComprobante = cm.idComprobante 
-            INNER JOIN cliente AS cl ON v.idCliente = cl.idCliente 
-            INNER JOIN ventaDetalle AS vd ON vd.idVenta = v.idVenta 
-            INNER JOIN lote AS lo ON vd.idLote = lo.idLote 
-            INNER JOIN manzana AS ma ON lo.idManzana = ma.idManzana 
+            const result = await conec.query(`
+            SELECT 
+                v.idVenta, 
+                cl.idCliente,
+                cl.documento, 
+                cl.informacion, 
+                lo.descripcion AS lote,
+                ma.nombre AS manzana,
+                cm.nombre AS comprobante, 
+                v.serie, 
+                v.numeracion, 
+                (SELECT IFNULL(DATE_FORMAT(MIN(co.fecha),'%d/%m/%Y'),'') FROM cobro AS co WHERE co.idProcedencia = v.idVenta ) AS primerPago,
+                (SELECT IFNULL(p.monto,0) FROM plazo AS p WHERE p.idVenta = v.idVenta LIMIT 1) AS cuotaMensual,
+                (SELECT IFNULL(COUNT(*), 0) FROM plazo AS p WHERE p.idVenta = v.idVenta) AS cuoTotal,
+                (SELECT IFNULL(COUNT(*), 0) FROM plazo AS p WHERE p.estado = 0 AND p.idVenta = v.idVenta) AS numCuota,
+                CASE WHEN v.frecuencia = 30 THEN 'FIN DE MES' ELSE 'CADA QUINCENA' END AS frecuenciaName, 
+                CASE 
+                WHEN v.credito = 1 THEN DATE_ADD(v.fecha,interval v.frecuencia day)
+                ELSE (SELECT IFNULL(MIN(p.fecha),'') FROM plazo AS p WHERE p.estado = 0 AND p.idVenta = v.idVenta) END AS fechaPago,
+                v.fecha, 
+                v.hora, 
+                v.estado,
+                v.credito,
+                v.frecuencia,
+                m.idMoneda,
+                m.simbolo,
+                IFNULL(SUM(vd.precio*vd.cantidad),0) AS total,
+                (
+                 SELECT IFNULL(ROUND(SUM(cv.precio), 2),0) 
+                 FROM cobro AS c 
+                 LEFT JOIN notaCredito AS nc ON c.idCobro = nc.idCobro AND nc.estado = 1
+                 LEFT JOIN cobroVenta AS cv ON c.idCobro = cv.idCobro 
+                 WHERE c.idProcedencia = v.idVenta AND c.estado = 1 AND nc.idNotaCredito IS NULL
+                ) AS cobrado 
+            FROM 
+                venta AS v 
+            INNER JOIN 
+                moneda AS m ON m.idMoneda = v.idMoneda
+            INNER JOIN 
+                comprobante AS cm ON v.idComprobante = cm.idComprobante 
+            INNER JOIN 
+                cliente AS cl ON v.idCliente = cl.idCliente 
+            INNER JOIN 
+                ventaDetalle AS vd ON vd.idVenta = v.idVenta 
+            INNER JOIN 
+                lote AS lo ON vd.idLote = lo.idLote 
+            INNER JOIN 
+                manzana AS ma ON lo.idManzana = ma.idManzana 
             WHERE  
-            ? = 0 AND v.estado = 2 AND v.idProyecto = ? 
-            OR
-            ? = 1 AND v.estado = 2            
-            GROUP BY v.idVenta
-            ORDER BY v.fecha DESC, v.hora DESC`, [
+                ? = 0 AND v.estado = 2 AND v.idProyecto = ? 
+                OR
+                ? = 1 AND v.estado = 2            
+            GROUP BY 
+                v.idVenta
+            ORDER BY 
+                v.fecha DESC, v.hora DESC`, [
                 parseInt(req.query.porProyecto),
                 req.query.idProyecto,
 

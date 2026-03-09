@@ -1,7 +1,7 @@
 import React from "react";
 import { Redirect } from "react-router-dom";
 import { connect } from "react-redux";
-import { signIn } from "../../redux/principal";
+import { signIn } from "../../redux/principalSlice";
 import noimage from "../../recursos/images/noimage.jpg";
 import "./Login.css";
 import { loginApi } from "../../network/rest/principal.network";

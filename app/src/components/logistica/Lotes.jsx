@@ -1,12 +1,6 @@
 import React from 'react';
 import axios from 'axios';
 import {
-    isNumeric,
-    keyNumberFloat,
-    showModal,
-    hideModal,
-    viewModal,
-    clearModal,
     ModalAlertDialog,
     ModalAlertInfo,
     ModalAlertSuccess,
@@ -18,157 +12,80 @@ import {
 import { connect } from 'react-redux';
 import SearchBarManzana from "../../helper/SearchBarManzana";
 import Paginacion from '../../helper/Paginacion';
+import { setLotesState } from '../../redux/lotesSlice';
 
 class Lotes extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            idLote: '',
-            idManzana: '',
-            manzanas: [],
-            manzanasCombo: [],
-            manzana: '',
-            idConcepto: '',
-            conceptos: [],
-            descripcion: '',
-            costo: '',
-            precio: '',
-            idMedida: '',
-            medidas: [],
-            estado: '',
-            medidaFrontal: '',
-            costadoDerecho: '',
-            costadoIzquierdo: '',
-            medidaFondo: '',
-            areaLote: '',
-            numeroPartida: '',
-            limiteFrontal: '',
-            limiteDerecho: '',
-            limiteIzquierdo: '',
-            limitePosterior: '',
-            ubicacionLote: '',
-            nameLote: '',
-            idProyecto: this.props.token.project.idProyecto,
-            idUsuario: this.props.token.userToken.idUsuario,
+            ...props.lotesState,
 
             add: statePrivilegio(this.props.token.userToken.menus[3].submenu[1].privilegio[0].estado),
             view: statePrivilegio(this.props.token.userToken.menus[3].submenu[1].privilegio[1].estado),
             edit: statePrivilegio(this.props.token.userToken.menus[3].submenu[1].privilegio[2].estado),
             remove: statePrivilegio(this.props.token.userToken.menus[3].submenu[1].privilegio[3].estado),
 
-            loadModal: false,
-            nameModal: 'Nuevo Lote',
-            messageWarning: '',
-            msgModal: 'Cargando datos...',
-
-            loading: false,
-            lista: [],
-            restart: false,
-
-            opcion: 0,
-            paginacion: 0,
-            totalPaginacion: 0,
-            filasPorPagina: 10,
-            messageTable: 'Cargando información...',
-            messagePaginacion: 'Mostranto 0 de 0 Páginas'
+            idProyecto: this.props.token.project.idProyecto,
         }
+
         this.refManzana = React.createRef();
-        this.refConcepto = React.createRef();
-        this.refDescripcion = React.createRef();
-        this.refCosto = React.createRef();
-        this.refPrecio = React.createRef();
-        this.refMedida = React.createRef();
-        this.refEstado = React.createRef();
+        this.refPaginacion = React.createRef();
 
-        this.refMedidaFrontal = React.createRef();
-        this.refCostadoDerecho = React.createRef();
-        this.refCostadoIzquiero = React.createRef();
-        this.refMedidaFondo = React.createRef();
-        this.refAreaLote = React.createRef();
-        this.refNumeroPartida = React.createRef();
-
-        this.refTxtSearch = React.createRef();
-
-        this.idCodigo = "";
-        this.abortControllerTable = new AbortController();
+        this.abortControllerTable = null;
     }
 
-    setStateAsync(state) {
+    setStateAsync = (newState) => {
         return new Promise((resolve) => {
-            this.setState(state, resolve)
+            this.setState((prevState) => {
+
+                const nextState = { ...prevState, ...newState };
+
+                const paginacionState = this.refPaginacion.current?.getBounds();
+
+                this.props.setLotesState({
+                    ...nextState,
+                    paginacionState
+                });
+
+                resolve(nextState);
+
+                return newState;
+            });
         });
-    }
+    };
 
     async componentDidMount() {
-        this.loadInit();
+        const pagState = this.props.lotesState.paginacionState;
 
-        viewModal("modalLote", () => {
-            this.abortControllerModal = new AbortController();
+        if (pagState && this.refPaginacion.current) {
+            this.refPaginacion.current.setBounds(pagState);
+        }
 
-            if (this.idCodigo !== "") {
-                this.loadDataId(this.idCodigo);
-            } else {
-                this.loadData();
-            }
-        });
-
-        clearModal("modalLote", async () => {
-            this.abortControllerModal.abort();
-            await this.setStateAsync({
-                idLote: '',
-                idManzana: '',
-                manzanas: [],
-                idConcepto: '',
-                conceptos: [],
-                descripcion: '',
-                costo: '',
-                precio: '',
-                idMedida: '',
-                medidas: [],
-                estado: '',
-                medidaFrontal: '',
-                costadoDerecho: '',
-                costadoIzquierdo: '',
-                medidaFondo: '',
-                areaLote: '',
-                numeroPartida: '',
-                limiteFrontal: '',
-                limiteDerecho: '',
-                limiteIzquierdo: '',
-                limitePosterior: '',
-                ubicacionLote: '',
-
-                loadModal: false,
-                nameModal: 'Nuevo Comprobante',
-                msgModal: 'Cargando datos...',
-            });
-            this.onFocusTab("info-tab", "info");
-            this.idCodigo = "";
-        });
+        if (!this.state.lista?.length) {
+            this.loadInit();
+        }
     }
 
     componentWillUnmount() {
-        this.abortControllerTable.abort();
+        this.abortControllerTable?.abort();
     }
 
     loadInit = async () => {
         if (this.state.loading) return;
 
         await this.setStateAsync({ paginacion: 1, restart: true, manzana: "", nameLote: "" });
-        this.fillTable(0, "", "");
+        this.fillTable(0);
         await this.setStateAsync({ opcion: 0 });
-        this.refTxtSearch.current.value = ""
     }
 
-    async searchText(lote) {
-        if (this.state.loading) return;
+    async searchText(text) {
+        const value = text.trim();
 
-        if (lote.trim().length === 0) return;
+        if (this.state.loading || !value) return;
 
         await this.setStateAsync({ paginacion: 1, restart: false, manzana: "" });
-        this.fillTable(1, lote.trim(), this.state.manzana);
-        await this.setStateAsync({ opcion: 1 });
-        await this.setStateAsync({ nameLote: lote });
+        this.fillTable(1, value, this.state.manzana);
+        await this.setStateAsync({ opcion: 1, nameLote: value });
     }
 
     paginacionContext = async (listid) => {
@@ -177,22 +94,17 @@ class Lotes extends React.Component {
     }
 
     onEventPaginacion = () => {
-        switch (this.state.opcion) {
-            case 0:
-                this.fillTable(0, "", "");
-                break;
-            case 1:
-                this.fillTable(1, this.refTxtSearch.current.value, this.refManzana.current.value);
-                break;
-            default: this.fillTable(0, "", "");
-        }
+        this.fillTable(this.state.opcion, this.state.search, this.refManzana.current.value);
     }
 
-    fillTable = async (opcion, lote, manzana) => {
+    fillTable = async (opcion, lote = "", manzana = "") => {
+        this.abortControllerTable?.abort();
+        this.abortControllerTable = new AbortController();
+
         try {
             await this.setStateAsync({ loading: true, lista: [], messageTable: "Cargando información...", messagePaginacion: "Mostranto 0 de 0 Páginas" });
 
-            const result = await axios.get(import.meta.env.VITE_APP_END_POINT+'/api/lote/list', {
+            const result = await axios.get(import.meta.env.VITE_APP_END_POINT + '/api/lote/list', {
                 params: {
                     "idProyecto": this.state.idProyecto,
                     "opcion": opcion,
@@ -202,8 +114,9 @@ class Lotes extends React.Component {
                     "filasPorPagina": this.state.filasPorPagina
                 }
             });
-            let totalPaginacion = parseInt(Math.ceil((parseFloat(result.data.total) / this.state.filasPorPagina)));
-            let messagePaginacion = `Mostrando ${result.data.result.length} de ${totalPaginacion} Páginas`;
+
+            const totalPaginacion = Math.ceil(result.data.total / this.state.filasPorPagina);
+            let messagePaginacion = `Mostrando ${result.data.result.length} registros | ${totalPaginacion} páginas`;
 
             await this.setStateAsync({
                 loading: false,
@@ -212,7 +125,7 @@ class Lotes extends React.Component {
                 messagePaginacion: messagePaginacion
             });
         } catch (error) {
-            if (error.message !== "canceled") {
+            if (error.code !== "ERR_CANCELED") {
                 await this.setStateAsync({
                     loading: false,
                     lista: [],
@@ -221,249 +134,43 @@ class Lotes extends React.Component {
                     messagePaginacion: "Mostranto 0 de 0 Páginas",
                 });
             }
+        } finally {
+            this.abortControllerTable = null;
         }
     }
 
-    async openModal(id) {
-        if (id === "") {
-            showModal('modalLote');
-            await this.setStateAsync({ nameModal: "Nuevo Lote", loadModal: true });
-        } else {
-            showModal('modalLote');
-            this.idCodigo = id;
-            await this.setStateAsync({ idLote: id, nameModal: "Editar Lote", loadModal: true });
-        }
-    }
-
-    async loadData() {
-        try {
-            let manzana = await axios.get(import.meta.env.VITE_APP_END_POINT+'/api/manzana/listcombo', {
-                signal: this.abortControllerModal.signal,
-                params: {
-                    "idProyecto": this.state.idProyecto,
-                }
-            });
-
-            let medida = await axios.get(import.meta.env.VITE_APP_END_POINT+'/api/medida/listcombo', {
-                signal: this.abortControllerModal.signal,
-            });
-
-            const concepto = await axios.get(import.meta.env.VITE_APP_END_POINT+"/api/concepto/listcombo", {
-                signal: this.abortControllerModal.signal,
-            });
-
-            await this.setStateAsync({
-                manzanas: manzana.data,
-                medidas: medida.data,
-                conceptos: concepto.data,
-                loadModal: false
-            });
-        } catch (error) {
-            if (error.message !== "canceled") {
-                await this.setStateAsync({
-                    msgModal: "Se produjo un error interno, intente nuevamente"
-                });
-            }
-        }
-    }
-
-    async loadDataId(id) {
-        try {
-            let manzana = await axios.get(import.meta.env.VITE_APP_END_POINT+'/api/manzana/listcombo', {
-                signal: this.abortControllerModal.signal,
-                params: {
-                    "idProyecto": this.state.idProyecto,
-                }
-            });
-
-            const concepto = await axios.get(import.meta.env.VITE_APP_END_POINT+"/api/concepto/listcombo", {
-                signal: this.abortControllerModal.signal,
-            });
-
-            let medida = await axios.get(import.meta.env.VITE_APP_END_POINT+'/api/medida/listcombo', {
-                signal: this.abortControllerModal.signal,
-            });
-
-            let result = await axios.get(import.meta.env.VITE_APP_END_POINT+'/api/lote/id', {
-                signal: this.abortControllerModal.signal,
-                params: {
-                    "idLote": id
-                }
-            });
-
-            await this.setStateAsync({
-                idLote: result.data.idLote,
-                idManzana: result.data.idManzana,
-                idConcepto: result.data.idConcepto,
-                descripcion: result.data.descripcion,
-                costo: result.data.costo.toString(),
-                precio: result.data.precio.toString(),
-                idMedida: result.data.idMedida,
-                estado: result.data.estado,
-                medidaFrontal: result.data.medidaFrontal.toString(),
-                costadoDerecho: result.data.costadoDerecho,
-                costadoIzquierdo: result.data.costadoIzquierdo,
-                medidaFondo: result.data.medidaFondo,
-                areaLote: result.data.areaLote,
-                numeroPartida: result.data.numeroPartida,
-                limiteFrontal: result.data.limiteFrontal,
-                limiteDerecho: result.data.limiteDerecho,
-                limiteIzquierdo: result.data.limiteIzquierdo,
-                limitePosterior: result.data.limitePosterior,
-                ubicacionLote: result.data.ubicacionLote,
-
-                manzanas: manzana.data,
-                medidas: medida.data,
-                conceptos: concepto.data,
-
-                loadModal: false
-            });
-        } catch (error) {
-            if (error.message !== "canceled") {
-                await this.setStateAsync({
-                    msgModal: "Se produjo un error interno, intente nuevamente"
-                });
-            }
-        }
-    }
-
-    async onEventGuardar() {
-        if (this.state.idManzana === "") {
-            this.onFocusTab("info-tab", "info");
-            this.refManzana.current.focus();
-            return;
-        }
-
-        if (this.state.idConcepto === "") {
-            this.onFocusTab("info-tab", "info");
-            this.refConcepto.current.focus();
-            return;
-        }
-
-        if (this.state.descripcion === "") {
-            this.onFocusTab("info-tab", "info");
-            this.refDescripcion.current.focus();
-            return;
-        }
-
-        if (!isNumeric(this.state.costo)) {
-            this.onFocusTab("info-tab", "info");
-            this.refCosto.current.focus();
-            return;
-        }
-
-        if (!isNumeric(this.state.precio)) {
-            this.onFocusTab("info-tab", "info");
-            this.refPrecio.current.focus();
-            return;
-        }
-
-        if (this.state.idMedida === "") {
-            this.onFocusTab("info-tab", "info");
-            this.refMedida.current.focus();
-            return;
-        }
-
-        if (this.state.estado === "") {
-            this.onFocusTab("info-tab", "info");
-            this.refEstado.current.focus();
-            return;
-        }
-
-        try {
-            ModalAlertInfo("Lote", "Procesando información...");
-            hideModal("modalLote");
-            if (this.state.idLote !== '') {
-                let result = await axios.put(import.meta.env.VITE_APP_END_POINT+"/api/lote", {
-                    "idLote": this.state.idLote,
-                    "idManzana": this.state.idManzana,
-                    "idConcepto": this.state.idConcepto,
-                    "descripcion": this.state.descripcion.trim().toUpperCase(),
-                    "costo": this.state.costo,
-                    "precio": this.state.precio,
-                    "idMedida": this.state.idMedida,
-                    "estado": this.state.estado,
-                    "medidaFrontal": isNumeric(this.state.medidaFrontal) ? this.state.medidaFrontal : 0,
-                    "costadoDerecho": isNumeric(this.state.costadoDerecho) ? this.state.costadoDerecho : 0,
-                    "costadoIzquierdo": isNumeric(this.state.costadoIzquierdo) ? this.state.costadoIzquierdo : 0,
-                    "medidaFondo": isNumeric(this.state.medidaFondo) ? this.state.medidaFondo : 0,
-                    "areaLote": isNumeric(this.state.areaLote) ? this.state.areaLote : 0,
-                    "numeroPartida": isNumeric(this.state.numeroPartida) ? this.state.numeroPartida : 0,
-                    "limiteFrontal": this.state.limiteFrontal,
-                    "limiteDerecho": this.state.limiteDerecho,
-                    "limiteIzquierdo": this.state.limiteIzquierdo,
-                    "limitePosterior": this.state.limitePosterior,
-                    "ubicacionLote": this.state.ubicacionLote,
-                    "idUsuario": this.state.idUsuario
-                });
-
-                ModalAlertSuccess("Lote", result.data, () => {
-                    this.onEventPaginacion();
-                });
-            } else {
-                let result = await axios.post(import.meta.env.VITE_APP_END_POINT+"/api/lote", {
-                    "idManzana": this.state.idManzana,
-                    "idConcepto": this.state.idConcepto,
-                    "descripcion": this.state.descripcion.trim().toUpperCase(),
-                    "costo": this.state.costo,
-                    "precio": this.state.precio,
-                    "idMedida": this.state.idMedida,
-                    "estado": this.state.estado,
-                    "medidaFrontal": isNumeric(this.state.medidaFrontal) ? this.state.medidaFrontal : 0,
-                    "costadoDerecho": isNumeric(this.state.costadoDerecho) ? this.state.costadoDerecho : 0,
-                    "costadoIzquierdo": isNumeric(this.state.costadoIzquierdo) ? this.state.costadoIzquierdo : 0,
-                    "medidaFondo": isNumeric(this.state.medidaFondo) ? this.state.medidaFondo : 0,
-                    "areaLote": isNumeric(this.state.areaLote) ? this.state.areaLote : 0,
-                    "numeroPartida": isNumeric(this.state.numeroPartida) ? this.state.numeroPartida : 0,
-                    "limiteFrontal": this.state.limiteFrontal,
-                    "limiteDerecho": this.state.limiteDerecho,
-                    "limiteIzquierdo": this.state.limiteIzquierdo,
-                    "limitePosterior": this.state.limitePosterior,
-                    "ubicacionLote": this.state.ubicacionLote,
-                    "idUsuario": this.state.idUsuario
-                });
-
-                ModalAlertSuccess("Lote", result.data, () => {
-                    this.loadInit();
-                });
-            }
-        } catch (error) {
-            ModalAlertWarning("Lote", "Se produjo un error un interno, intente nuevamente.");
-        }
-    }
-
-    onFocusTab(idTab, idContent) {
-        if (!document.getElementById(idTab).classList.contains('active')) {
-            for (let child of document.getElementById('myTab').childNodes) {
-                child.childNodes[0].classList.remove('active')
-            }
-            for (let child of document.getElementById('myTabContent').childNodes) {
-                child.classList.remove('show', 'active')
-            }
-            document.getElementById(idTab).classList.add('active');
-            document.getElementById(idContent).classList.add('show', 'active');
-        }
-    }
-
-    onEventMostrar(idLote) {
+    handleMostrar(idLote) {
         this.props.history.push({
             pathname: `${this.props.location.pathname}/detalle`,
             search: "?idLote=" + idLote
         })
     }
 
-    onEventDelete(idLote) {
-        ModalAlertDialog("Lote", "¿Estás seguro de eliminar el lote?", async (event) => {
-            if (event) {
+    handleCrear() {
+        this.props.history.push({
+            pathname: `${this.props.location.pathname}/proceso`
+        })
+    }
+
+    handleEditar(idLote) {
+        this.props.history.push({
+            pathname: `${this.props.location.pathname}/proceso`,
+            search: "?idLote=" + idLote
+        })
+    }
+
+    handleEliminar(idLote) {
+        ModalAlertDialog("Lote", "¿Estás seguro de eliminar el lote?", async (accept) => {
+            if (accept) {
                 try {
                     ModalAlertInfo("Lote", "Procesando información...")
-                    let result = await axios.delete(import.meta.env.VITE_APP_END_POINT+'/api/lote', {
+                    let result = await axios.delete(import.meta.env.VITE_APP_END_POINT + '/api/lote', {
                         params: {
                             "idLote": idLote
                         }
                     })
-                    ModalAlertSuccess("Lote", result.data, () => {
-                        this.loadInit();
+                    ModalAlertSuccess("Lote", result.data, async () => {
+                        await this.loadInit();
                     })
                 } catch (error) {
                     if (error.response !== undefined) {
@@ -476,36 +183,28 @@ class Lotes extends React.Component {
         })
     }
 
-    onEventClearInputManzana = async () => {
-        await this.setStateAsync({ manzanasCombo: [], idManzana: '', manzana: "" });
+    handleClearInputManzana = async () => {
+        await this.setStateAsync({ manzanas: [], idManzana: '', manzana: "" });
 
         this.fillTable(1, this.state.nameLote, "");
     }
 
-    onEventSelectItemManzana = async (value) => {
-        await this.setStateAsync({
-            manzanasCombo: [],
-            idManzana: value.idManzana,
-            manzana: value.nombre
-        });
-        
-        this.fillTable(1, this.state.nameLote, value.nombre);
-    }
-
     handleFilterManzana = async (event) => {
         const searchWord = event.target.value;
+
         await this.setStateAsync({ idManzana: '', manzana: searchWord });
+
         if (searchWord.length === 0) {
-            await this.setStateAsync({ manzanasCombo: [] });
+            await this.setStateAsync({ manzanas: [] });
             return;
         }
 
-        if (this.state.handleFilterManzana) return;
+        if (this.state.filterManzana) return;
 
         try {
             await this.setStateAsync({ filterManzana: true });
 
-            let result = await axios.get(import.meta.env.VITE_APP_END_POINT+ "/api/manzana/listComboByLote", {
+            let result = await axios.get(import.meta.env.VITE_APP_END_POINT + "/api/manzana/listComboByLote", {
                 params: {
                     idProyecto: this.state.idProyecto,
                     buscar: searchWord,
@@ -513,374 +212,25 @@ class Lotes extends React.Component {
                 },
             });
 
-            await this.setStateAsync({ filterManzana: false, manzanasCombo: result.data });
+            await this.setStateAsync({ filterManzana: false, manzanas: result.data });
         } catch (error) {
-            await this.setStateAsync({ filterManzana: false, manzanasCombo: [] });
+            await this.setStateAsync({ filterManzana: false, manzanas: [] });
         }
+    }
+
+    handleSelectItemManzana = async (value) => {
+        await this.setStateAsync({
+            manzanas: [],
+            idManzana: value.idManzana,
+            manzana: value.nombre
+        });
+
+        this.fillTable(1, this.state.nameLote, value.nombre);
     }
 
     render() {
         return (
             <>
-                {/* Inicio modal nuevo cliente*/}
-                <div className="modal fade" id="modalLote" tabIndex="-1" aria-labelledby="modalLoteLabel" aria-hidden="true">
-                    <div className="modal-dialog">
-                        <div className="modal-content">
-                            <div className="modal-header">
-                                <h5 className="modal-title">{this.state.nameModal}</h5>
-                                <button type="button" className="close" data-bs-dismiss="modal" aria-label="Close">
-                                    <span aria-hidden="true">&times;</span>
-                                </button>
-                            </div>
-                            <div className="modal-body">
-                                {this.state.loadModal ?
-                                    <div className="clearfix absolute-all bg-white">
-                                        {spinnerLoading(this.state.msgModal)}
-                                    </div>
-                                    : null
-                                }
-
-                                {
-                                    this.state.messageWarning === '' ? null :
-                                        <div className="alert alert-warning" role="alert">
-                                            <i className="bi bi-exclamation-diamond-fill"></i> {this.state.messageWarning}
-                                        </div>
-                                }
-
-                                <ul className="nav nav-tabs" id="myTab" role="tablist">
-                                    <li className="nav-item" role="presentation">
-                                        <a className="nav-link active" id="info-tab" data-bs-toggle="tab" href="#info" role="tab" aria-controls="info" aria-selected="true">
-                                            <i className="bi bi-info-circle"></i> Descripcion
-                                        </a>
-                                    </li>
-                                    <li className="nav-item" role="presentation">
-                                        <a className="nav-link" id="medida-tab" data-bs-toggle="tab" href="#medida" role="tab" aria-controls="medida" aria-selected="false">
-                                            <i className="bi bi-aspect-ratio"></i> Medidas
-                                        </a>
-                                    </li>
-                                    <li className="nav-item" role="presentation">
-                                        <a className="nav-link" id="limite-tab" data-bs-toggle="tab" href="#limite" role="tab" aria-controls="limite" aria-selected="false">
-                                            <i className="bi bi-pip"></i> Limite
-                                        </a>
-                                    </li>
-                                </ul>
-                                <div className="tab-content pt-2" id="myTabContent">
-                                    <div className="tab-pane fade active show" id="info" role="tabpanel" aria-labelledby="info-tab">
-                                        <div className='col-lg-12 col-md-12 col-sm-12 col-xs-12'>
-                                            <div className="form-group">
-                                                <label htmlFor="manzana">Manzana <i className="fa fa-asterisk text-danger small"></i></label>
-                                                <select
-                                                    className="form-control"
-                                                    id="manzana"
-                                                    ref={this.refManzana}
-                                                    value={this.state.idManzana}
-                                                    onChange={(event) => {
-                                                        this.setState({ idManzana: event.target.value })
-                                                    }}
-                                                >
-                                                    <option value="">- Seleccione -</option>
-                                                    {
-                                                        this.state.manzanas.map((item, index) => (
-                                                            <option key={index} value={item.idManzana}>{item.nombre}</option>
-                                                        ))
-                                                    }
-                                                </select>
-                                            </div>
-
-                                            <div className="form-group">
-                                                <label htmlFor="manzana">Concepto <i className="fa fa-asterisk text-danger small"></i></label>
-                                                <select
-                                                    className="form-control"
-                                                    id="manzana"
-                                                    ref={this.refConcepto}
-                                                    value={this.state.idConcepto}
-                                                    onChange={(event) => {
-                                                        this.setState({ idConcepto: event.target.value })
-                                                    }}
-                                                >
-                                                    <option value="">- Seleccione -</option>
-                                                    {
-                                                        this.state.conceptos.map((item, index) => (
-                                                            <option key={index} value={item.idConcepto}>{item.nombre}</option>
-                                                        ))
-                                                    }
-                                                </select>
-                                            </div>
-
-                                            <div className="form-group">
-                                                <label htmlFor="descripción">Descripción del Lote <i className="fa fa-asterisk text-danger small"></i></label>
-                                                <input
-                                                    type="text"
-                                                    className="form-control"
-                                                    id="descripcion"
-                                                    placeholder='ej. Lote 07'
-                                                    ref={this.refDescripcion}
-                                                    value={this.state.descripcion}
-                                                    onChange={(event) => {
-                                                        this.setState({ descripcion: event.target.value })
-                                                    }}
-                                                />
-                                            </div>
-
-                                            <div className="form-row">
-                                                <div className="form-group col-md-6">
-                                                    <label htmlFor="cAproximado">Costo Aproximado <i className="fa fa-asterisk text-danger small"></i></label>
-                                                    <input
-                                                        type="text"
-                                                        className="form-control"
-                                                        id="cAproximado"
-                                                        placeholder='0.00'
-                                                        ref={this.refCosto}
-                                                        value={this.state.costo}
-                                                        onChange={(event) => {
-                                                            this.setState({ costo: event.target.value })
-                                                        }}
-                                                        onKeyPress={keyNumberFloat}
-                                                    />
-                                                </div>
-
-                                                <div className="form-group col-md-6">
-                                                    <label htmlFor="pvContado">Precio Venta Contado <i className="fa fa-asterisk text-danger small"></i></label>
-                                                    <input
-                                                        type="text"
-                                                        className="form-control"
-                                                        id="pvContado"
-                                                        placeholder='0.00'
-                                                        ref={this.refPrecio}
-                                                        value={this.state.precio}
-                                                        onChange={(event) => {
-                                                            this.setState({ precio: event.target.value })
-                                                        }}
-                                                        onKeyPress={keyNumberFloat}
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            <div className="form-row">
-                                                <div className="form-group col-md-6">
-                                                    <label htmlFor="medidaSunat">Tipo de Medida(Sunat) <i className="fa fa-asterisk text-danger small"></i></label>
-                                                    <select
-                                                        className="form-control"
-                                                        id="medidaSunat"
-                                                        ref={this.refMedida}
-                                                        value={this.state.idMedida}
-                                                        onChange={(event) => {
-                                                            this.setState({ idMedida: event.target.value })
-                                                        }}>
-                                                        <option value="">- Seleccione -</option>
-                                                        {
-                                                            this.state.medidas.map((item, index) => (
-                                                                <option key={index} value={item.idMedida}>{item.nombre}</option>
-                                                            ))
-                                                        }
-                                                    </select>
-                                                </div>
-                                                <div className="form-group col-md-6">
-                                                    <label htmlFor="estado">Estado <i className="fa fa-asterisk text-danger small"></i></label>
-                                                    <select
-                                                        className="form-control"
-                                                        id="estado"
-                                                        ref={this.refEstado}
-                                                        value={this.state.estado}
-                                                        onChange={(event) => {
-                                                            this.setState({ estado: event.target.value })
-                                                        }}
-                                                    >
-                                                        <option value="">- Seleccione -</option>
-                                                        <option value="1">Disponible</option>
-                                                        <option value="2">Reservado</option>
-                                                        <option value="3">Vendido</option>
-                                                        <option value="4">Inactivo</option>
-                                                    </select>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="tab-pane fade" id="medida" role="tabpanel" aria-labelledby="medida-tab">
-                                        <div className='col-lg-12 col-md-12 col-sm-12 col-xs-12'>
-                                            <div className="form-group">
-                                                <label htmlFor="mFrontal">Medida Frontal (ML)</label>
-                                                <input
-                                                    type="text"
-                                                    className="form-control"
-                                                    id="mFrontal"
-                                                    placeholder='0'
-                                                    ref={this.refMedidaFrontal}
-                                                    value={this.state.medidaFrontal}
-                                                    onChange={(event) => {
-                                                        this.setState({ medidaFrontal: event.target.value })
-                                                    }}
-                                                    onKeyPress={keyNumberFloat}
-                                                />
-                                            </div>
-
-                                            <div className="form-row">
-                                                <div className="form-group col-md-6">
-                                                    <label htmlFor="coDerecho">Costado Derecho (ML)</label>
-                                                    <input
-                                                        type="text"
-                                                        className="form-control"
-                                                        id="coDerecho"
-                                                        placeholder='0'
-                                                        ref={this.refCostadoDerecho}
-                                                        value={this.state.costadoDerecho}
-                                                        onChange={(event) => {
-                                                            this.setState({ costadoDerecho: event.target.value })
-                                                        }}
-                                                        onKeyPress={keyNumberFloat}
-                                                    />
-                                                </div>
-
-                                                <div className="form-group col-md-6">
-                                                    <label htmlFor="coIzquierdo">Costado Izquierdo (ML)</label>
-                                                    <input
-                                                        type="text"
-                                                        className="form-control"
-                                                        id="coIzquierdo"
-                                                        placeholder='0'
-                                                        ref={this.refCostadoIzquiero}
-                                                        value={this.state.costadoIzquierdo}
-                                                        onChange={(event) => {
-                                                            this.setState({ costadoIzquierdo: event.target.value })
-                                                        }}
-                                                        onKeyPress={keyNumberFloat}
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            <div className="form-row">
-                                                <div className="form-group col-md-6">
-                                                    <label htmlFor="mFondo">Medida Fondo (ML)</label>
-                                                    <input
-                                                        type="text"
-                                                        className="form-control"
-                                                        id="mFondo"
-                                                        placeholder='0'
-                                                        ref={this.refMedidaFondo}
-                                                        value={this.state.medidaFondo}
-                                                        onChange={(event) => {
-                                                            this.setState({ medidaFondo: event.target.value })
-                                                        }}
-                                                        onKeyPress={keyNumberFloat}
-                                                    />
-                                                </div>
-
-                                                <div className="form-group col-md-6">
-                                                    <label htmlFor="aLote">Area Lote (M2)</label>
-                                                    <input
-                                                        type="text"
-                                                        className="form-control"
-                                                        id="aLote"
-                                                        placeholder='0'
-                                                        ref={this.refAreaLote}
-                                                        value={this.state.areaLote}
-                                                        onChange={(event) => {
-                                                            this.setState({ areaLote: event.target.value })
-                                                        }}
-                                                        onKeyPress={keyNumberFloat}
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            <div className="form-group">
-                                                <label htmlFor="nPartida">N° Partida</label>
-                                                <input
-                                                    type="text"
-                                                    className="form-control"
-                                                    id="nPartida"
-                                                    placeholder='0'
-                                                    ref={this.refNumeroPartida}
-                                                    value={this.state.numeroPartida}
-                                                    onChange={(event) => {
-                                                        this.setState({ numeroPartida: event.target.value })
-                                                    }}
-                                                    onKeyPress={keyNumberFloat}
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="tab-pane fade" id="limite" role="tabpanel" aria-labelledby="limite-tab">
-                                        <div className='col-lg-12 col-md-12 col-sm-12 col-xs-12'>
-                                            <div className="form-group">
-                                                <label htmlFor="lFrontal">Limite, Frontal / Norte / Noreste</label>
-                                                <input
-                                                    type="text"
-                                                    className="form-control"
-                                                    id="lFrontal"
-                                                    placeholder='Limite'
-                                                    value={this.state.limiteFrontal}
-                                                    onChange={(event) => {
-                                                        this.setState({ limiteFrontal: event.target.value })
-                                                    }}
-                                                />
-                                            </div>
-                                            <div className="form-group">
-                                                <label htmlFor="lDerecho">Limite, Derecho / Este / Sureste</label>
-                                                <input
-                                                    type="text"
-                                                    className="form-control"
-                                                    id="lDerecho"
-                                                    placeholder='Limite'
-                                                    value={this.state.limiteDerecho}
-                                                    onChange={(event) => {
-                                                        this.setState({ limiteDerecho: event.target.value })
-                                                    }}
-                                                />
-                                            </div>
-                                            <div className="form-group">
-                                                <label htmlFor="lIzquierdo">Limite, Izquierdo / Sur / Suroeste</label>
-                                                <input
-                                                    type="text"
-                                                    className="form-control"
-                                                    id="lIzquierdo"
-                                                    placeholder='Limite'
-                                                    value={this.state.limiteIzquierdo}
-                                                    onChange={(event) => {
-                                                        this.setState({ limiteIzquierdo: event.target.value })
-                                                    }}
-                                                />
-                                            </div>
-                                            <div className="form-group">
-                                                <label htmlFor="lPosterior">Limite, Posterior / Oeste / Noroeste</label>
-                                                <input
-                                                    type="text"
-                                                    className="form-control"
-                                                    id="lPosterior"
-                                                    placeholder='Limite'
-                                                    value={this.state.limitePosterior}
-                                                    onChange={(event) => {
-                                                        this.setState({ limitePosterior: event.target.value })
-                                                    }}
-                                                />
-                                            </div>
-                                            <div className="form-group">
-                                                <label htmlFor="ubicacionLote">Ubicación del Lote</label>
-                                                <input
-                                                    type="text"
-                                                    className="form-control"
-                                                    id="ubicacionLote"
-                                                    placeholder='ej. Frente al parque'
-                                                    value={this.state.ubicacionLote}
-                                                    onChange={(event) => {
-                                                        this.setState({ ubicacionLote: event.target.value })
-                                                    }}
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="modal-footer">
-                                <button type="button" className="btn btn-primary" onClick={() => this.onEventGuardar()}>Aceptar</button>
-                                <button type="button" className="btn btn-danger" data-bs-dismiss="modal">Cerrar</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                {/* fin modal nuevo cliente*/}
-
                 <div className='row'>
                     <div className='col-lg-12 col-md-12 col-sm-12 col-xs-12'>
                         <div className="form-group">
@@ -900,28 +250,31 @@ class Lotes extends React.Component {
                                     type="text"
                                     className="form-control"
                                     placeholder="Buscar..."
-                                    ref={this.refTxtSearch}
-                                    onKeyUp={(event) => keyUpSearch(event, () => this.searchText(event.target.value))}
+                                    value={this.state.search}
+                                    onChange={(e) => this.setStateAsync({ search: e.target.value })}
+                                    onKeyUp={(event) =>
+                                        keyUpSearch(event, () => this.searchText(this.state.search))
+                                    }
                                 />
                             </div>
                         </div>
                     </div>
                     <div className="col-md-4 col-sm-12">
-                        <div className="form-group ">
+                        <div className="form-group">
                             <SearchBarManzana
                                 placeholder="Filtrar manzana..."
                                 refManzana={this.refManzana}
                                 manzana={this.state.manzana}
-                                manzanas={this.state.manzanasCombo}
-                                onEventClearInput={this.onEventClearInputManzana}
+                                manzanas={this.state.manzanas}
+                                onEventClearInput={this.handleClearInputManzana}
                                 handleFilter={this.handleFilterManzana}
-                                onEventSelectItem={this.onEventSelectItemManzana}
+                                onEventSelectItem={this.handleSelectItemManzana}
                             />
                         </div>
                     </div>
                     <div className="col-md-4 col-sm-12">
                         <div className="form-group">
-                            <button className="btn btn-outline-info" onClick={() => this.openModal('')} disabled={!this.state.add}>
+                            <button className="btn btn-outline-info" onClick={() => this.handleCrear()} disabled={!this.state.add}>
                                 <i className="bi bi-file-plus"></i> Nuevo Registro
                             </button>
                             {" "}
@@ -984,7 +337,7 @@ class Lotes extends React.Component {
                                                             <button
                                                                 className="btn btn-outline-info btn-sm"
                                                                 title="Detalle"
-                                                                onClick={() => this.onEventMostrar(item.idLote)}
+                                                                onClick={() => this.handleMostrar(item.idLote)}
                                                                 disabled={!this.state.view}>
                                                                 <i className="bi bi-eye"></i>
                                                             </button>
@@ -993,7 +346,7 @@ class Lotes extends React.Component {
                                                             <button
                                                                 className="btn btn-outline-warning btn-sm"
                                                                 title="Editar"
-                                                                onClick={() => this.openModal(item.idLote)}
+                                                                onClick={() => this.handleEditar(item.idLote)}
                                                                 disabled={!this.state.edit}>
                                                                 <i className="bi bi-pencil"></i>
                                                             </button>
@@ -1002,7 +355,7 @@ class Lotes extends React.Component {
                                                             <button
                                                                 className="btn btn-outline-danger btn-sm"
                                                                 title="Anular"
-                                                                onClick={() => this.onEventDelete(item.idLote)}
+                                                                onClick={() => this.handleEliminar(item.idLote)}
                                                                 disabled={!this.state.remove}>
                                                                 <i className="bi bi-trash"></i>
                                                             </button>
@@ -1028,6 +381,7 @@ class Lotes extends React.Component {
                             <nav aria-label="Page navigation example">
                                 <ul className="pagination justify-content-end">
                                     <Paginacion
+                                        ref={this.refPaginacion}
                                         loading={this.state.loading}
                                         totalPaginacion={this.state.totalPaginacion}
                                         paginacion={this.state.paginacion}
@@ -1047,8 +401,13 @@ class Lotes extends React.Component {
 
 const mapStateToProps = (state) => {
     return {
-        token: state.principal
+        token: state.principal,
+        lotesState: state.lotes
     }
 }
 
-export default connect(mapStateToProps, null)(Lotes);
+const mapDispatchToProps = {
+    setLotesState
+};
+
+export default connect(mapStateToProps, mapDispatchToProps)(Lotes);

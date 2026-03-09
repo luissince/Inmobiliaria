@@ -11,13 +11,21 @@
 
 
 import { configureStore } from '@reduxjs/toolkit';
-import principal from './principal';
-import notiReducer from './notifications';
+import principalReducer from './principalSlice';
+import notifacionReducer from './notificationsSlice';
+import ventasReducer from './ventasSlice'
+import lotesReducer from './lotesSlice'
+import cobrosReducer from './cobrosSlice'
+import createReducer from './creditosSlice'
 import { combineReducers } from '@reduxjs/toolkit';
 
 const reducer = combineReducers({
-    principal,
-    notiReducer,
+    principal: principalReducer,
+    notiReducer: notifacionReducer,
+    ventas: ventasReducer,
+    lotes: lotesReducer,
+    cobros: cobrosReducer,
+    creditos: createReducer
 })
 
 const store = configureStore({

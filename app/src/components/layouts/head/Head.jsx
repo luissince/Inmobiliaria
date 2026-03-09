@@ -1,8 +1,8 @@
 import React from "react";
 import { Link } from 'react-router-dom';
 import { connect } from 'react-redux';
-import { signOut, closeProject } from '../../../redux/principal';
-import { addNotification } from '../../../redux/notifications';
+import { signOut, closeProject } from '../../../redux/principalSlice';
+import { addNotification } from '../../../redux/notificationsSlice';
 import usuario from '../../../recursos/images/usuario.png';
 
 class Menu extends React.Component {

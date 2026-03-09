@@ -3,6 +3,7 @@ const app = express();
 const path = require('path');
 // const socket = require('socket.io');
 const cors = require('cors');
+const { currentDate, currentTime } = require('./src/tools/Tools');
 /**
  * Carga de variable de entorno
  */
@@ -63,6 +64,22 @@ app.use(express.static(path.join(__dirname, "./src/path/proyect")));
  * Mostar estaticanmente las imagenes de la empresa
  */
 app.use(express.static(path.join(__dirname, "./src/path/company")));
+
+/**
+ * Middleware para registrar las solicitudes
+ */
+app.use((req, res, next) => {
+    console.log(`[${currentDate()} ${currentTime()}]`);
+    console.log('Solicitud recibida:');
+    console.log('Método:', req.method);
+    console.log('URL:', req.url);
+    console.log('Cabecera(req.headers):', req.headers);
+    console.log('Cuerpo(req.body):');
+    console.dir(req.body, { depth: null });
+    console.log('Parametro(req.params):', req.params);
+    console.log('Consulta(req.query):', req.query);
+    next();
+});
 
 /**
  * Cargar las rutas de la apis

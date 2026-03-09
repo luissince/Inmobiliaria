@@ -4,7 +4,7 @@ import axios from 'axios';
 // import { NotificationContainer, NotificationManager } from 'react-notifications';
 import { Switch, Route, Redirect } from 'react-router-dom';
 import { connect } from 'react-redux';
-import { signOut, closeProject } from '../../redux/principal';
+import { signOut, closeProject } from '../../redux/principalSlice';
 import Menu from '../layouts/menu/Menu';
 import Head from '../layouts/head/Head';
 import Notifications from '../layouts/head/Notifications';
@@ -31,6 +31,7 @@ import Proyectos from '../ajustes/Proyectos';
 import ProcesoProyecto from '../ajustes/proyecto/ProcesoProyecto';
 import Manzanas from '../logistica/Manzanas';
 import Lotes from '../logistica/Lotes';
+import LoteCrear from '../logistica/registro/LoteProceso';
 import LoteDetalle from '../logistica/registro/LoteDetalle';
 import VentaProceso from '../facturacion/registros/VentaProceso';
 import VentaDetalle from '../facturacion/registros/VentaDetalle';
@@ -388,6 +389,11 @@ class Inicio extends React.Component {
                                     path={`${path}/lotes`}
                                     exact={true}
                                     render={(props) => <Lotes {...props} />}
+                                />
+                                <Route
+                                    path={`${path}/lotes/proceso`}
+                                    exact={true}
+                                    render={(props) => <LoteCrear {...props} />}
                                 />
                                 <Route
                                     path={`${path}/lotes/detalle`}

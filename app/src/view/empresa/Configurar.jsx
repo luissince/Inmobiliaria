@@ -12,7 +12,7 @@ import {
     ModalAlertWarning,
 } from '../../helper/Tools';
 import { connect } from 'react-redux';
-import { configSave } from '../../redux/principal';
+import { configSave } from '../../redux/principalSlice';
 import sunat from '../../recursos/images/sunat.png';
 import noImage from '../../recursos/images/noimage.jpg'
 

@@ -193,6 +193,22 @@ function manzanaLote(lot, manz) {
 
 }
 
+function generateAlphanumericCode(idCode, lista, propiedad) {
+    if (lista.length === 0) return idCode
+
+    const quitarValor = lista.map(item => parseInt(item[propiedad].replace(/[A-Z]+/g, '')));
+    const incremental = Math.max(...quitarValor) + 1;
+    const formattedIncremental = String(incremental).padStart(4, '0');
+    return `${idCode.slice(0, 2)}${formattedIncremental}`;
+}
+
+function generateNumericCode(idCode, lista, propiedad) {
+    if (lista.length === 0) return idCode
+
+    const quitarValor = lista.map(item => parseInt(item[propiedad]));
+    return Math.max(...quitarValor) + 1;
+}
+
 module.exports = {
     isNumber,
     currentDate,
@@ -211,5 +227,7 @@ module.exports = {
     mkdir,
     chmod,
     manzanaLote,
-    isEmail
+    isEmail,
+    generateAlphanumericCode,
+    generateNumericCode
 };

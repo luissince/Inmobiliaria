@@ -1,0 +1,14 @@
+{
+  "name": "inmobiliaria",
+  "version": "1.0.0",
+  "description": "Aplcación para gestionar inmobiliarias",
+  "main": "index.js",
+  "scripts": {
+     "dev": "concurrently \"npm run dev --prefix app\" \"npm run dev --prefix server\""
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

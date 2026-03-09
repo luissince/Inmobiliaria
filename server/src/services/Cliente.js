@@ -10,7 +10,8 @@ class Cliente {
      */
     async list(req) {
         try {
-            const lista = await conec.query(`SELECT 
+            const lista = await conec.query(`
+            SELECT 
                 c.idCliente ,
                 a.idProyecto,
                 td.nombre as tipodocumento,

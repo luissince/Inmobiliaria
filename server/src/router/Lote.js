@@ -33,7 +33,7 @@ router.post('/', async function (req, res) {
 router.post('/socio', async function (req, res) {
     const result = await lote.socio(req)
     if (result === "insert") {
-        res.status(201).send("Datos registrados correctamente.")
+        res.status(201).send("El traspaso se registro correctamente.")
     } else if (result === "cliente") {
         res.status(400).send("El cliente ya está registrado como asociado.")
     } else {

@@ -14,12 +14,13 @@ import {
     ModalAlertWarning,
     ModalAlertError
 } from '../../../helper/Tools';
-import { liberarTerreno, listarComboCliente, loteDetalle, loteRestablecer, loteSocio } from '../../../network/rest/principal.network';
+import { liberarTerreno, loteDetalle, loteRestablecer, loteSocio } from '../../../network/rest/principal.network';
 import { connect } from 'react-redux';
 import { CANCELED, ERROR } from '../../../model/types/types';
 import SuccessReponse from '../../../model/class/response';
 import ErrorResponse from '../../../model/class/error';
-
+import SearchBarClient from '../../../helper/SearchBarClient';
+import axios from 'axios';
 
 class LoteDetalle extends React.Component {
     constructor(props) {
@@ -40,15 +41,15 @@ class LoteDetalle extends React.Component {
             msgLoading: 'Cargando datos...',
 
             idCliente: '',
+            cliente: '',
             clientes: [],
+            isLoadingCliente: false,
 
-            loadModal: false,
             nameModal: 'Nuevo Traspaso',
             msgModal: 'Cargando datos...',
         }
 
-        this.abortControllerTable = new AbortController();
-
+        this.abortControllerTable = null;
         this.abortControllerLiberar = new AbortController();
 
         this.refCliente = React.createRef();
@@ -70,16 +71,14 @@ class LoteDetalle extends React.Component {
         }
 
         viewModal("modalSocio", () => {
-            this.abortControllerModal = new AbortController();
-            this.loadData();
+
         });
 
         clearModal("modalSocio", async () => {
-            this.abortControllerModal.abort();
             await this.setStateAsync({
                 idCliente: '',
+                cliente: '',
                 clientes: [],
-                loadModal: false,
                 nameModal: 'Nuevo Traspaso',
                 msgModal: 'Cargando datos...',
             });
@@ -87,65 +86,43 @@ class LoteDetalle extends React.Component {
     }
 
     componentWillUnmount() {
-        this.abortControllerTable.abort();
-        this.abortControllerLiberar.abort();
-    }
-
-    async loadData() {
-        const response = await listarComboCliente(this.abortControllerModal.signal);
-
-        if (response instanceof SuccessReponse) {
-            let newLista = [];
-
-            for (let cli of response.data) {
-                for (let soc of this.state.socios) {
-                    if (cli.idCliente !== soc.idCliente) {
-                        newLista.push({ ...cli });
-                        break;
-                    }
-                }
-            }
-
-            await this.setStateAsync({
-                clientes: newLista,
-                loadModal: false
-            })
-            return;
-        }
-
-        if (response instanceof ErrorResponse) {
-            if (response.type === CANCELED) return;
-
-            await this.setStateAsync({
-                msgModal: response.message
-            });
-        }
-
+        this.abortControllerTable?.abort();
+        this.abortControllerLiberar?.abort();
     }
 
     async loadDataId(id) {
-        const data = {
-            "idLote": id
-        }
-        const response = await loteDetalle(data, this.abortControllerTable.signal);
+        this.abortControllerTable?.abort();
+        this.abortControllerTable = new AbortController();
 
-        if (response instanceof SuccessReponse) {
-            await this.setStateAsync({
-                lote: response.data.lote,
-                socios: response.data.socios,
-                detalle: response.data.detalle,
-                idLote: id,
-                idVenta: response.data.venta.idVenta,
-                idClienteOld: response.data.venta.idCliente,
-                loading: false,
-            });
-            return;
-        }
 
-        if (response instanceof ErrorResponse) {
-            if (response.type === CANCELED) return;
+        try {
+            const data = {
+                "idLote": id
+            }
+            const response = await loteDetalle(data, this.abortControllerTable.signal);
 
-            this.props.history.goBack();
+            if (response instanceof SuccessReponse) {
+                await this.setStateAsync({
+                    lote: response.data.lote,
+                    socios: response.data.socios,
+                    detalle: response.data.detalle,
+                    idLote: id,
+                    idVenta: response.data.venta.idVenta,
+                    idClienteOld: response.data.venta.idCliente,
+                    loading: false,
+                });
+                return;
+            }
+
+            if (response instanceof ErrorResponse) {
+                if (response.type === CANCELED) return;
+
+                this.props.history.goBack();
+            }
+        } catch (error) {
+
+        } finally {
+            this.abortControllerTable = null;
         }
     }
 
@@ -154,7 +131,7 @@ class LoteDetalle extends React.Component {
         await this.setStateAsync({ loadModal: true });
     }
 
-    async onEventGuardar() {
+    handleTraspasar = async () => {
         if (this.state.idCliente === "") {
             this.refCliente.current.focus();
             return;
@@ -194,7 +171,7 @@ class LoteDetalle extends React.Component {
         })
     }
 
-    async onEventRestablecer(idCliente) {
+    handleRestablecer = async (idCliente) => {
         ModalAlertDialog("Lote", "¿Está seguro de restablecer al socio, la operación no es reversible?", async (value) => {
             if (value) {
                 ModalAlertInfo("Lote", "Procesando información...");
@@ -226,7 +203,7 @@ class LoteDetalle extends React.Component {
         })
     }
 
-    async onEventImprimir() {
+    handleImprimir = async () => {
         const data = {
             "idLote": this.state.idLote,
             "idSede": "SD0001"
@@ -234,7 +211,7 @@ class LoteDetalle extends React.Component {
 
         let ciphertext = CryptoJS.AES.encrypt(JSON.stringify(data), 'key-report-inmobiliaria').toString();
         let params = new URLSearchParams({ "params": ciphertext });
-        window.open(import.meta.env.VITE_APP_END_POINT+"/api/lote/replotedetalle?" + params, "_blank");
+        window.open(import.meta.env.VITE_APP_END_POINT + "/api/lote/replotedetalle?" + params, "_blank");
 
         //Despliegue 
         // window.open(import.meta.env.VITE_APP_END_POINT+"/api/lote/replotedetalle?idLote=" + this.state.idLote + "&idSede=SD0001", "_blank");
@@ -258,9 +235,13 @@ class LoteDetalle extends React.Component {
         //     console.log(error)
         // }
     }
-    async onEventLiberar() {
+
+    handleLiberar = async () => {
         ModalAlertDialog("Lote", "¿Está seguro de liberar el lote?. Los cambios no son irreversibles.", async (value) => {
             if (value) {
+                this.abortControllerLiberar?.abort();
+                this.abortControllerLiberar = new AbortController();
+
                 ModalAlertInfo("Lote", "Procesando liberación...");
 
                 const data = {
@@ -270,6 +251,7 @@ class LoteDetalle extends React.Component {
 
                 const response = await liberarTerreno(data, this.abortControllerLiberar.signal);
                 if (response instanceof SuccessReponse) {
+                    this.abortControllerLiberar = null;
                     ModalAlertSuccess("Lote", response.data, () => this.props.history.goBack());
                     return;
                 }
@@ -277,10 +259,56 @@ class LoteDetalle extends React.Component {
                 if (response instanceof ErrorResponse) {
                     if (response.type === CANCELED) return;
 
+                    this.abortControllerLiberar = null;
                     ModalAlertWarning("Lote", response.message);
                     return;
                 }
             }
+        });
+    }
+
+    handleClearInputCliente = async () => {
+        await this.setStateAsync({ clientes: [], idCliente: "", cliente: "" });
+    }
+
+    handleFilterCliente = async (event) => {
+        const searchWord = event.target.value;
+
+        await this.setStateAsync({
+            idCliente: '',
+            cliente: searchWord,
+        });
+
+        if (searchWord.length === 0) {
+            await this.setStateAsync({ clientes: [] });
+            return;
+        }
+
+        if (this.state.isLoadingCliente) return;
+
+        await this.setStateAsync({ isLoadingCliente: true });
+
+        try {
+            await this.setStateAsync({ isLoadingCliente: true });
+
+            let result = await axios.get(import.meta.env.VITE_APP_END_POINT + "/api/cliente/listfiltrar", {
+                params: {
+                    filtrar: searchWord,
+                },
+            });
+
+            await this.setStateAsync({ isLoadingCliente: false, clientes: result.data });
+        } catch (error) {
+            console.log(error)
+            await this.setStateAsync({ isLoadingCliente: false, clientes: [] });
+        }
+    }
+
+    handleSelectItemCliente = async (value) => {
+        await this.setStateAsync({
+            cliente: value.documento + " - " + value.informacion,
+            clientes: [],
+            idCliente: value.idCliente
         });
     }
 
@@ -298,43 +326,24 @@ class LoteDetalle extends React.Component {
                                 </button>
                             </div>
                             <div className="modal-body">
-                                {this.state.loadModal ?
-                                    <div className="clearfix absolute-all bg-white">
-                                        {spinnerLoading(this.state.msgModal)}
-                                    </div>
-                                    : null}
-
-                                <div className="form-row">
-                                    <div className="form-group col-md-12">
-                                        <label>Seleccione un Socio</label>
-                                        <select className="form-control"
-                                            ref={this.refCliente}
-                                            value={this.state.idCliente}
-                                            onChange={(event) => this.setState({ idCliente: event.target.value })}>
-                                            <option value="">- Seleccione -</option>
-                                            {this.state.clientes.map((item, index) => (
-                                                <option key={index} value={item.idCliente}>{item.informacion}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                </div>
-
+                                <SearchBarClient
+                                    placeholder="Filtrar clientes..."
+                                    refCliente={this.refCliente}
+                                    cliente={this.state.cliente}
+                                    clientes={this.state.clientes}
+                                    onEventClearInput={this.handleClearInputCliente}
+                                    handleFilter={this.handleFilterCliente}
+                                    onEventSelectItem={this.handleSelectItemCliente}
+                                />
                             </div>
                             <div className="modal-footer">
-                                <button type="button" className="btn btn-primary" onClick={() => this.onEventGuardar()}>Aceptar</button>
+                                <button type="button" className="btn btn-primary" onClick={() => this.handleTraspasar()}>Aceptar</button>
                                 <button type="button" className="btn btn-danger" data-bs-dismiss="modal">Cerrar</button>
                             </div>
                         </div>
                     </div>
                 </div>
                 {/* fin modal */}
-
-                {
-                    this.state.loading ?
-                        <div className="clearfix absolute-all bg-white">
-                            {spinnerLoading(this.state.msgLoading)}
-                        </div> : null
-                }
 
                 <div className='row'>
                     <div className='col-lg-12 col-md-12 col-sm-12 col-xs-12'>
@@ -347,14 +356,22 @@ class LoteDetalle extends React.Component {
                     </div>
                 </div>
 
+                {
+                    this.state.loading && (
+                        <div className="clearfix absolute-all bg-white">
+                            {spinnerLoading(this.state.msgLoading)}
+                        </div>
+                    )
+                }
+
                 <div className="row">
                     <div className="col-lg-12 col-md-12 col-sm-12 col-xs-12">
                         <div className="form-group">
-                            <button type="button" className="btn btn-light" onClick={() => this.onEventImprimir()}><i className="fa fa-print"></i> Imprimir</button>
+                            <button type="button" className="btn btn-light" onClick={() => this.handleImprimir()}><i className="fa fa-print"></i> Imprimir</button>
                             {" "}
                             <button type="button" className="btn btn-light"><i className="fa fa-file-archive-o"></i> Adjuntar</button>
                             {" "}
-                            <button type="button" className="btn btn-danger" onClick={() => this.onEventLiberar()}><i className="fa fa-ban"></i> Liberar</button>
+                            <button type="button" className="btn btn-danger" onClick={() => this.handleLiberar()}><i className="fa fa-ban"></i> Liberar</button>
                         </div>
                     </div>
                 </div>
@@ -471,14 +488,14 @@ class LoteDetalle extends React.Component {
                                                 <td className={`${item.estado === 1 ? "text-success" : "text-danger"}`}>{item.estado === 1 ? "ACTIVO" : "ANULADO"}</td>
                                                 <td className="text-center">
                                                     {
-                                                        item.estado === 0 ?
+                                                        item.estado === 0 && (
                                                             <button
                                                                 type="button"
                                                                 className="btn btn-warning btn-sm"
-                                                                onClick={() => this.onEventRestablecer(item.idCliente)}>
+                                                                onClick={() => this.handleRestablecer(item.idCliente)}>
                                                                 <i className="fa fa-level-up"></i>
                                                             </button>
-                                                            : null
+                                                        )
                                                     }
                                                 </td>
                                             </tr>
@@ -508,9 +525,14 @@ class LoteDetalle extends React.Component {
                                 </thead>
                                 <tbody>
                                     {
-                                        this.state.detalle.length === 0 ?
-                                            <tr><td colSpan="7" className="text-center">No hay cobros asociados.</td></tr>
-                                            :
+                                        this.state.detalle.length === 0 && (
+                                            <tr>
+                                                <td colSpan="7" className="text-center">No hay cobros asociados.</td>
+                                            </tr>
+                                        )
+                                    }
+                                    {
+                                        this.state.detalle.length !== 0 && (
                                             this.state.detalle.map((item, index) => {
                                                 return (
                                                     <tr key={index}>
@@ -524,6 +546,7 @@ class LoteDetalle extends React.Component {
                                                     </tr>
                                                 )
                                             })
+                                        )
                                     }
                                 </tbody>
                             </table>

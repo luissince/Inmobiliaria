@@ -2,7 +2,7 @@ import React from 'react';
 import axios from 'axios';
 import { Redirect } from 'react-router-dom';
 import { connect } from 'react-redux';
-import { signOut, selectProject } from '../../redux/principal';
+import { signOut, selectProject } from '../../redux/principalSlice';
 import { spinnerLoading } from '../../helper/Tools';
 
 import noImage from '../../recursos/images/noimage.jpg'

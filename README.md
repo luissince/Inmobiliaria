@@ -1,70 +1,218 @@
-# Getting Started with Create React App
+# 🏡 Sistema de Gestión Inmobiliaria
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Aplicación web para **administrar terrenos, clientes y cobros** en proyectos inmobiliarios.
+Permite registrar lotes, controlar pagos, gestionar usuarios y generar reportes.
 
-## Available Scripts
+El sistema está dividido en dos partes:
 
-In the project directory, you can run:
+* **Frontend:** React + Vite
+* **Backend:** Node.js + Express + MySQL
 
-### `npm start`
+---
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+# 📦 Tecnologías utilizadas
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## Frontend
 
-### `npm test`
+* React 18
+* Vite
+* Redux Toolkit
+* React Redux
+* React Router DOM
+* Axios
+* Bootstrap Icons
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## Backend
 
-### `npm run build`
+* Node.js
+* Express
+* MySQL
+* JWT (autenticación)
+* Bcrypt (encriptación de contraseñas)
+* Nodemailer (envío de correos)
+* PDFKit (generación de PDFs)
+* Excel4Node (exportación a Excel)
+* QRCode
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## Herramientas de desarrollo
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+* Nodemon
+* ESLint
+* Concurrently
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+---
 
-### `npm run eject`
+# 📂 Estructura del proyecto
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+```
+inmobiliaria/
+│
+├── app/                # Frontend React
+│   ├── src/
+│   ├── public/
+│   └── package.json
+│
+├── server/             # Backend Node.js
+│   ├── routes/
+│   ├── controllers/
+│   ├── models/
+│   └── package.json
+│
+└── package.json        # Script para ejecutar ambos proyectos
+```
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+---
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+# ⚙️ Instalación
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+Clonar el repositorio:
 
-## Learn More
+```bash
+git clone https://github.com/luissince/Inmobiliaria.git
+cd inmobiliaria
+```
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+Instalar dependencias del proyecto principal:
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+```bash
+npm install
+```
 
-### Code Splitting
+Instalar dependencias del frontend:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+```bash
+cd app
+npm install
+```
 
-### Analyzing the Bundle Size
+Instalar dependencias del backend:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+```bash
+cd ../server
+npm install
+```
 
-### Making a Progressive Web App
+---
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+# 🚀 Ejecutar la aplicación
 
-### Advanced Configuration
+Desde la carpeta raíz del proyecto:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+```bash
+npm run dev
+```
 
-### Deployment
+Este comando ejecutará simultáneamente:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+* **Frontend:** Vite
+* **Backend:** Node con Nodemon
 
-### `npm run build` fails to minify
+Gracias al paquete **concurrently**.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+---
+
+# 🔐 Variables de entorno
+
+Crear un archivo `.env` dentro de la carpeta `server`.
+
+Ejemplo:
+
+```
+PORT=4000
+
+DB_HOST=localhost
+DB_USER=root
+DB_PASSWORD=tu_password
+DB_NAME=inmobiliaria
+
+JWT_SECRET=clave_secreta
+EMAIL_USER=correo@gmail.com
+EMAIL_PASSWORD=contraseña
+```
+
+---
+
+# 📊 Funcionalidades principales
+
+### 🏘 Gestión de terrenos
+
+* Registro de lotes
+* Ubicación y estado del terreno
+* Control de disponibilidad
+
+### 👤 Gestión de clientes
+
+* Registro de compradores
+* Historial de compras
+* Información de contacto
+
+### 💰 Control de pagos
+
+* Registro de cuotas
+* Historial de pagos
+* Control de deudas
+
+### 📄 Reportes
+
+* Exportación a **PDF**
+* Exportación a **Excel**
+* Reportes de pagos
+
+### 🔐 Seguridad
+
+* Autenticación con **JWT**
+* Contraseñas encriptadas con **bcrypt**
+
+---
+
+# 🧠 Arquitectura
+
+El sistema sigue una arquitectura **cliente-servidor**:
+
+```
+React (Frontend)
+        │
+        │ HTTP / Axios
+        ▼
+Node.js + Express (API REST)
+        │
+        ▼
+MySQL (Base de datos)
+```
+
+---
+
+# 🛠 Scripts disponibles
+
+En la raíz del proyecto:
+
+```json
+"scripts": {
+  "dev": "concurrently \"npm run dev --prefix app\" \"npm run dev --prefix server\""
+}
+```
+
+Esto permite iniciar **frontend y backend con un solo comando**.
+
+---
+
+# 📌 Mejoras futuras
+
+* Panel de estadísticas
+* Mapa de terrenos
+* Notificaciones de pago
+* Firma digital de contratos
+* Integración con pasarela de pagos
+
+---
+
+Si quieres, también puedo hacerte un **README mucho más profesional tipo GitHub top** con:
+
+* badges
+* screenshots
+* arquitectura más clara
+* API endpoints documentados
+* base de datos (tablas)
+* diagrama del sistema
+
+que haría que tu proyecto se vea **mucho más serio para portafolio o empresa**.

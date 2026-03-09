@@ -1,7 +1,7 @@
 import React from 'react';
 import '../../recursos/css/loader.css';
 import { connect } from 'react-redux';
-import { config, restoreToken } from '../../redux/principal';
+import { config, restoreToken } from '../../redux/principalSlice';
 import { empresaConfig, validToken } from '../../network/rest/principal.network';
 
 import { CANCELED } from '../../model/types/types';
