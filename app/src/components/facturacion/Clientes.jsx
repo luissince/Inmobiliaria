@@ -11,48 +11,61 @@ import {
     keyUpSearch
 } from '../../helper/Tools';
 import Paginacion from '../../helper/Paginacion';
+import { setClientesState } from '../../redux/clientesSlice';
 
 class Clientes extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            idProyecto: this.props.token.project.idProyecto,
-
-            loading: false,
-            lista: [],
-            restart: false,
+            ...props.clientesState,
 
             add: statePrivilegio(this.props.token.userToken.menus[2].submenu[0].privilegio[0].estado),
             edit: statePrivilegio(this.props.token.userToken.menus[2].submenu[0].privilegio[1].estado),
             remove: statePrivilegio(this.props.token.userToken.menus[2].submenu[0].privilegio[2].estado),
             view: statePrivilegio(this.props.token.userToken.menus[2].submenu[0].privilegio[3].estado),
 
-            opcion: 0,
-            paginacion: 0,
-            fill: 'any',
-            totalPaginacion: 0,
-            filasPorPagina: 10,
-            messageTable: 'Cargando información...',
-            messagePaginacion: 'Mostranto 0 de 0 Páginas'
+            idProyecto: this.props.token.project.idProyecto,
         }
-        this.refTxtSearch = React.createRef();
 
-        this.idCodigo = "";
-        this.abortControllerTable = new AbortController();
+        this.refPaginacion = React.createRef();
+
+        this.abortControllerTable = null;
     }
 
-    setStateAsync(state) {
+    setStateAsync = (newState) => {
         return new Promise((resolve) => {
-            this.setState(state, resolve)
+            this.setState((prevState) => {
+
+                const nextState = { ...prevState, ...newState };
+
+                const paginacionState = this.refPaginacion.current?.getBounds();
+
+                this.props.setClientesState({
+                    ...nextState,
+                    paginacionState
+                });
+
+                resolve(nextState);
+
+                return newState;
+            });
         });
-    }
+    };
 
     async componentDidMount() {
-        this.loadInit();
+        const pagState = this.props.clientesState.paginacionState;
+
+        if (pagState && this.refPaginacion.current) {
+            this.refPaginacion.current.setBounds(pagState);
+        }
+
+        if (!this.state.lista?.length) {
+            this.loadInit();
+        }
     }
 
     componentWillUnmount() {
-        this.abortControllerTable.abort();
+        this.abortControllerTable?.abort();
     }
 
     loadInit = async () => {
@@ -64,12 +77,12 @@ class Clientes extends React.Component {
     }
 
     async searchText(text) {
-        if (this.state.loading) return;
+        const value = text.trim();
 
-        if (text.trim().length === 0) return;
+        if (this.state.loading || !value) return;
 
         await this.setStateAsync({ paginacion: 1, restart: false });
-        this.fillTable(1, text.trim());
+        this.fillTable(1, value);
         await this.setStateAsync({ opcion: 1 });
     }
 
@@ -79,22 +92,17 @@ class Clientes extends React.Component {
     }
 
     onEventPaginacion = () => {
-        switch (this.state.opcion) {
-            case 0:
-                this.fillTable(0, "");
-                break;
-            case 1:
-                this.fillTable(1, this.refTxtSearch.current.value);
-                break;
-            default: this.fillTable(0, "");
-        }
+        this.fillTable(this.state.opcion, this.state.search);
     }
 
-    fillTable = async (opcion, buscar) => {
+    fillTable = async (opcion, buscar = "") => {
+        this.abortControllerTable?.abort();
+        this.abortControllerTable = new AbortController();
+
         try {
             await this.setStateAsync({ loading: true, lista: [], messageTable: "Cargando información...", messagePaginacion: "Mostranto 0 de 0 Páginas" });
 
-            const result = await axios.get(import.meta.env.VITE_APP_END_POINT+'/api/cliente/list', {
+            const result = await axios.get(import.meta.env.VITE_APP_END_POINT + '/api/cliente/list', {
                 signal: this.abortControllerTable.signal,
                 params: {
                     "opcion": opcion,
@@ -105,9 +113,9 @@ class Clientes extends React.Component {
                     "filasPorPagina": this.state.filasPorPagina
                 }
             });
-           
-            let totalPaginacion = parseInt(Math.ceil((parseFloat(result.data.total) / this.state.filasPorPagina)));
-            let messagePaginacion = `Mostrando ${result.data.result.length} de ${totalPaginacion} Páginas`;
+
+            const totalPaginacion = Math.ceil(result.data.total / this.state.filasPorPagina);
+            let messagePaginacion = `Mostrando ${result.data.result.length} registros | ${totalPaginacion} páginas`;
 
             await this.setStateAsync({
                 loading: false,
@@ -116,7 +124,7 @@ class Clientes extends React.Component {
                 messagePaginacion: messagePaginacion
             });
         } catch (error) {
-            if (error.message !== "canceled") {
+            if (error.code !== "ERR_CANCELED") {
                 await this.setStateAsync({
                     loading: false,
                     lista: [],
@@ -125,6 +133,8 @@ class Clientes extends React.Component {
                     messagePaginacion: "Mostranto 0 de 0 Páginas",
                 });
             }
+        } finally {
+            this.abortControllerTable = null;
         }
     }
 
@@ -153,7 +163,7 @@ class Clientes extends React.Component {
             if (value) {
                 try {
                     ModalAlertInfo("Cliente", "Procesando información...")
-                    let result = await axios.delete(import.meta.env.VITE_APP_END_POINT+'/api/cliente', {
+                    let result = await axios.delete(import.meta.env.VITE_APP_END_POINT + '/api/cliente', {
                         params: {
                             "idCliente": idCliente
                         }
@@ -210,8 +220,11 @@ class Clientes extends React.Component {
                                     type="text"
                                     className="form-control"
                                     placeholder="Buscar..."
-                                    ref={this.refTxtSearch}
-                                    onKeyUp={(event) => keyUpSearch(event, () => this.searchText(event.target.value))}
+                                    value={this.state.search}
+                                    onChange={(e) => this.setStateAsync({ search: e.target.value })}
+                                    onKeyUp={(event) =>
+                                        keyUpSearch(event, () => this.searchText(this.state.search))
+                                    }
                                 />
                             </div>
                         </div>
@@ -337,6 +350,7 @@ class Clientes extends React.Component {
                             <nav aria-label="Page navigation example">
                                 <ul className="pagination justify-content-end">
                                     <Paginacion
+                                        ref={this.refPaginacion}
                                         loading={this.state.loading}
                                         totalPaginacion={this.state.totalPaginacion}
                                         paginacion={this.state.paginacion}
@@ -355,9 +369,13 @@ class Clientes extends React.Component {
 
 const mapStateToProps = (state) => {
     return {
-        token: state.principal
+        token: state.principal,
+        clientesState: state.clientes
     }
-}
+};
 
+const mapDispatchToProps = {
+    setClientesState
+};
 
-export default connect(mapStateToProps, null)(Clientes);
+export default connect(mapStateToProps, mapDispatchToProps)(Clientes);

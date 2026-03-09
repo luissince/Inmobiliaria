@@ -16,57 +16,45 @@ class App extends React.Component {
         super(props);
         this.menuRef = React.createRef();
     }
- 
-    async componentDidMount() {
-      
-    }
 
     render() {
+        if (this.props.token.isLoading) {
+            return <Loader />;
+        }
+
+        if (this.props.token.isConfig) {
+            return <Configurar />;
+        }
+
         return (
-            <>
-                {
-                    this.props.token.isLoading ? (
-                        <Loader />
-                    ) :
-                        this.props.token.isConfig ?
-                            (
-                                <Configurar />
-                            )
-                            :
-                            (
-                                <BrowserRouter>
-                                    <Switch>
+            <BrowserRouter>
+                <Switch>
+                    <Route
+                        path="/"
+                        exact={true}>
+                        <Redirect to={"/login"} />
+                    </Route>
 
-                                        <Route
-                                            path="/"
-                                            exact={true}>
-                                            <Redirect to={"/login"} />
-                                        </Route>
+                    <Route
+                        path="/login"
+                        exact={true}
+                        render={(props) => <Login {...props} />}
+                    />
 
-                                        <Route
-                                            path="/login"
-                                            exact={true}
-                                            render={(props) => <Login {...props} />}
-                                        />
+                    <Route
+                        path="/principal"
+                        exact={true}
+                        render={(props) => <Principal {...props} />}
+                    />
 
-                                        <Route
-                                            path="/principal"
-                                            exact={true}
-                                            render={(props) => <Principal {...props} />}
-                                        />
+                    <Route
+                        path="/inicio"
+                        render={(props) => <Inicio {...props} />}
+                    />
 
-                                        <Route
-                                            path="/inicio"
-                                            render={(props) => <Inicio {...props} />}
-                                        />
-
-                                        <Route component={NotFound} />
-                                    </Switch>
-
-                                </BrowserRouter>
-                            )
-                }
-            </>
+                    <Route component={NotFound} />
+                </Switch>
+            </BrowserRouter>
         );
     }
 }
@@ -77,16 +65,16 @@ class App extends React.Component {
  */
 const mapStateToProps = (state) => {
     return {
-      token: state.principal,
+        token: state.principal,
     };
-  };
-  
-  const mapDispatchToProps = { config, restoreToken }
-  
-  /**
-   *
-   * Método encargado de conectar con redux y exportar la clase
-   */
-  const ConnectedApp = connect(mapStateToProps, mapDispatchToProps)(App);
-  
-  export default ConnectedApp;
+};
+
+const mapDispatchToProps = { config, restoreToken }
+
+/**
+ *
+ * Método encargado de conectar con redux y exportar la clase
+ */
+const ConnectedApp = connect(mapStateToProps, mapDispatchToProps)(App);
+
+export default ConnectedApp;

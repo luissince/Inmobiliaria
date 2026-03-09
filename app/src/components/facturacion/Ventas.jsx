@@ -74,13 +74,9 @@ class Ventas extends React.Component {
     loadInit = async () => {
         if (this.state.loading) return;
 
-        await this.setStateAsync({
-            paginacion: 1,
-            restart: true,
-            opcion: 0
-        });
-
+        await this.setStateAsync({ paginacion: 1, restart: true, });
         this.fillTable(0);
+        await this.setStateAsync({ opcion: 0 });
     }
 
     async searchText(text) {
@@ -88,13 +84,9 @@ class Ventas extends React.Component {
 
         if (this.state.loading || !value) return;
 
-        await this.setStateAsync({
-            paginacion: 1,
-            restart: false,
-            opcion: 1
-        });
-
+        await this.setStateAsync({ paginacion: 1, restart: false, });
         this.fillTable(1, value);
+        await this.setStateAsync({ opcion: 1 });
     }
 
     paginacionContext = async (listid) => {
@@ -103,11 +95,7 @@ class Ventas extends React.Component {
     }
 
     onEventPaginacion = () => {
-        const search = this.state.opcion === 1
-            ? this.state.search
-            : "";
-
-        this.fillTable(this.state.opcion, search);
+        this.fillTable(this.state.opcion, this.state.search);
     }
 
     fillTable = async (opcion, buscar = "") => {
@@ -130,7 +118,7 @@ class Ventas extends React.Component {
 
             const totalPaginacion = Math.ceil(result.data.total / this.state.filasPorPagina);
             let messagePaginacion = `Mostrando ${result.data.result.length} registros | ${totalPaginacion} páginas`;
-
+            
             await this.setStateAsync({
                 loading: false,
                 lista: result.data.result,
