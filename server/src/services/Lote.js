@@ -398,7 +398,6 @@ class Lote {
         }
     }
 
-
     async liberar(req, res) {
         let connection = null;
         try {
@@ -414,6 +413,300 @@ class Lote {
 
             await conec.commit(connection);
             return sendSuccess(res, "El proceso se liberación del lote se completo correctamente.");
+        } catch (error) {
+            console.log(error)
+            if (connection != null) {
+                await conec.rollback(connection);
+            }
+            return sendError(res, "Se produjo un error de servidor, intente nuevamente.");
+        }
+    }
+
+    /**
+     * Reasigna una venta desde un lote/proyecto origen hacia
+     * un nuevo lote/proyecto destino manteniendo toda la
+     * relación financiera y registrando un evento histórico.
+     *
+     * =========================================================
+     * OBJETIVO
+     * =========================================================
+     *
+     * Esta operación permite mover una venta existente a otro
+     * lote sin perder:
+     *
+     * - Cobros realizados
+     * - Historial financiero
+     * - Relación de venta
+     * - Trazabilidad del cambio
+     *
+     * El sistema utiliza un enfoque basado en eventos
+     * (Event Logging / Event Sourcing ligero), donde cada
+     * modificación importante queda registrada en la tabla:
+     *
+     * evento
+     *
+     * registrando:
+     *
+     * - estado anterior
+     * - estado nuevo
+     * - usuario
+     * - fecha
+     * - tipo de evento
+     *
+     * Esto permite:
+     *
+     * - reconstruir historial
+     * - auditoría
+     * - revertir movimientos
+     * - trazabilidad operativa
+     *
+     * =========================================================
+     * PROCESO
+     * =========================================================
+     *
+     * 1. Registrar evento histórico:
+     *    - lote/proyecto anterior
+     *    - lote/proyecto nuevo
+     *
+     * 2. Liberar lote anterior:
+     *    estado = 1
+     *
+     * 3. Ocupar lote nuevo:
+     *    estado = 3
+     *
+     * 4. Actualizar proyecto de la venta
+     *
+     * 5. Actualizar lote relacionado en ventaDetalle
+     *
+     * 6. Actualizar proyecto relacionado en cobro
+     *
+     * 7. Registrar auditoría del proceso
+     *
+     * =========================================================
+     * REVERSIÓN
+     * =========================================================
+     *
+     * Esta operación NO modifica eventos antiguos.
+     *
+     * Para revertir un cambio simplemente se ejecuta nuevamente
+     * esta misma operación intercambiando:
+     *
+     * - datosAntes
+     * - datosDespues
+     *
+     * generando un nuevo evento histórico.
+     *
+     * Ejemplo:
+     *
+     * Evento original:
+     * lote 1 -> lote 8
+     *
+     * Reversión:
+     * lote 8 -> lote 1
+     *
+     * De esta forma el historial permanece inmutable
+     * (append-only).
+     *
+     * =========================================================
+     * PARÁMETROS
+     * =========================================================
+     *
+     * @param {number} idLoteAntiguo
+     * Lote actualmente asociado a la venta.
+     *
+     * @param {number} idLoteNuevo
+     * Nuevo lote destino.
+     *
+     * @param {number} idProyectoAntiguo
+     * Proyecto actualmente asociado.
+     *
+     * @param {number} idProyectoNuevo
+     * Nuevo proyecto destino.
+     *
+     * @param {number} idVenta
+     * Identificador de la venta.
+     *
+     * @param {number} idUsuario
+     * Usuario responsable de la operación.
+     *
+     * =========================================================
+     * TRANSACCIONALIDAD
+     * =========================================================
+     *
+     * Todo el proceso se ejecuta dentro de una transacción SQL.
+     *
+     * Si alguna operación falla:
+     *
+     * - se hace rollback
+     * - no se altera el estado del sistema
+     *
+     * =========================================================
+     * TABLAS AFECTADAS
+     * =========================================================
+     *
+     * - evento
+     * - lote
+     * - venta
+     * - ventaDetalle
+     * - cobro
+     * - auditoria
+     *
+     */
+    async reasignar(req, res) {
+        let connection = null;
+        try {
+            const {
+                idLoteAntiguo,
+                idLoteNuevo,
+
+                idProyectoAntiguo,
+                idProyectoNuevo,
+
+                idVenta,
+                idUsuario
+            } = req.body;
+
+            connection = await conec.beginTransaction();
+
+            const date = currentDate();
+            const time = currentTime();
+
+            // =========================
+            // EVENTO
+            // =========================
+
+            const datosAntes = {
+                idLote: idLoteAntiguo,
+                idProyecto: idProyectoAntiguo
+            };
+
+            const datosDespues = {
+                idLote: idLoteNuevo,
+                idProyecto: idProyectoNuevo
+            };
+
+            const resultEvento = await conec.execute(connection, `
+            INSERT INTO evento(
+                modulo,
+                entidad,
+                idEntidad,
+                tipoEvento,
+                datosAntes,
+                datosDespues,
+                fecha,
+                idUsuario
+            ) VALUES(?,?,?,?,?,?,?,?)`, [
+                'VENTA',
+                'venta',
+                idVenta,
+                'REASIGNAR_LOTE',
+                JSON.stringify(datosAntes),
+                JSON.stringify(datosDespues),
+                new Date(),
+                idUsuario
+            ]);
+
+            const idEvento = resultEvento.insertId;
+
+            // =========================
+            // LIBERAR LOTE ANTIGUO
+            // =========================
+
+            await conec.execute(connection, `
+            UPDATE 
+                lote 
+            SET 
+                estado = 1 
+            WHERE 
+                idLote = ?`, [
+                idLoteAntiguo
+            ]);
+
+            // =========================
+            // OCUPAR LOTE NUEVO
+            // =========================
+
+            await conec.execute(connection, `
+            UPDATE 
+                lote 
+            SET 
+                estado = 3 
+            WHERE 
+                idLote = ?`, [
+                idLoteNuevo
+            ]);
+
+            // =========================
+            // ACTUALIZAR VENTA
+            // =========================
+
+            await conec.execute(connection, `
+            UPDATE 
+                venta 
+            SET 
+                idProyecto = ?
+            WHERE 
+                idVenta = ?`, [
+                idProyectoNuevo,
+                idVenta
+            ]);
+
+            // =========================
+            // ACTUALIZAR DETALLE
+            // =========================
+
+            await conec.execute(connection, `
+            UPDATE 
+                ventaDetalle
+            SET 
+                idLote = ?
+            WHERE 
+                idVenta = ?`, [
+                idLoteNuevo,
+                idVenta
+            ]);
+
+            // =========================
+            // ACTUALIZAR COBROS
+            // =========================
+
+            await conec.execute(connection, `
+            UPDATE 
+                cobro
+            SET 
+                idProyecto = ?
+            WHERE 
+                idProcedencia = ?`, [
+                idProyectoNuevo,
+                idVenta
+            ]);
+
+            // =========================
+            // AUDITORIA
+            // =========================
+
+            const listAuditoria = await conec.execute(connection, `SELECT idAuditoria FROM auditoria`);
+            const idAuditoria = generateNumericCode(1, listAuditoria, 'idAuditoria');
+
+            await conec.execute(connection, `
+            INSERT INTO auditoria(
+                idAuditoria,
+                idProcedencia,
+                descripcion,
+                fecha,
+                hora,
+                idUsuario
+            ) VALUES(?,?,?,?,?,?)`, [
+                idAuditoria,
+                idEvento,
+                'REASIGNAR_LOTE',
+                date,
+                time,
+                idUsuario
+            ]);
+
+            await conec.commit(connection);
+            return sendSuccess(res, "El proceso de cambio de lote se completo correctamente.");
         } catch (error) {
             console.log(error)
             if (connection != null) {

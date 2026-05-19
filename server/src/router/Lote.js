@@ -41,6 +41,10 @@ router.post('/socio', async function (req, res) {
     }
 });
 
+router.post('/reasignar', async function (req, res) {
+    return await lote.reasignar(req, res);
+});
+
 router.post('/restablecer', async function (req, res) {
     const result = await lote.restablecer(req)
     if (result === "insert") {
@@ -50,8 +54,8 @@ router.post('/restablecer', async function (req, res) {
     }
 });
 
-router.post("/liberar",async function (req, res) {
-    return await lote.liberar(req,res);
+router.post("/liberar", async function (req, res) {
+    return await lote.liberar(req, res);
 });
 
 router.get('/id', async function (req, res) {
