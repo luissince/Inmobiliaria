@@ -2,33 +2,50 @@ name: Docker Image CI
 
 on:
   push:
-    branches: [ "master" ]
+    branches:
+      - master
 
 jobs:
-
-  build-front-end:
-    name: Front-End (ReactJs)
-    if: github.ref == 'refs/heads/master'
+  build-and-push:
+    name: Build & Push Docker Image
     runs-on: ubuntu-latest
-    environment: front-end
 
     steps:
       - name: Checkout código
         uses: actions/checkout@v3
 
-      - name: Crear archivo .env
+      # =========================
+      # Front-End ENV
+      # =========================
+      - name: Create app/.env
         run: |
           cat > app/.env <<EOL
-          VITE_APP_END_POINT="${{secrets.VITE_APP_END_POINT}}"
-          VITE_APP_URL="${{secrets.VITE_APP_URL}}"
-          VITE_APP_IMAGE="${{secrets.VITE_APP_IMAGE}}"
-          VITE_APP_ENV="${{secrets.VITE_APP_ENV}}"
-          VITE_APP_VERSION="${{secrets.VITE_APP_VERSION}}"
+          VITE_APP_END_POINT=${{ secrets.VITE_APP_END_POINT }}
+          VITE_APP_URL=${{ secrets.VITE_APP_URL }}
+          VITE_APP_IMAGE=${{ secrets.VITE_APP_IMAGE }}
+          VITE_APP_ENV=${{ secrets.VITE_APP_ENV }}
+          VITE_APP_VERSION=${{ secrets.VITE_APP_VERSION }}
           EOL
 
-      - name: Build container App React
-        run: docker compose -f app/docker-compose.build.yml build
+      # =========================
+      # Back-End ENV
+      # =========================
+      - name: Create server/.env
+        run: |
+          cat > server/.env <<EOL
+          PORT=${{ secrets.PORT }}
+          DB_HOST=${{ secrets.DB_HOST }}
+          DB_USER=${{ secrets.DB_USER }}
+          DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+          DB_NAME=${{ secrets.DB_NAME }}
+          DB_PORT=${{ secrets.DB_PORT }}
+          TZ=${{ secrets.TZ }}
+          ENVIRONMENT=${{ secrets.ENVIRONMENT }}
+          EOL
 
+      # =========================
+      # AWS Credentials
+      # =========================
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -36,11 +53,31 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
+      # =========================
+      # Login ECR
+      # =========================
       - name: Login to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Tag front-end image
-        run: docker tag front-end-react ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/inmobiliaria:latest
+      # =========================
+      # Build Docker Image
+      # =========================
+      - name: Build Docker image
+        run: |
+          docker compose build
 
-      - name: Push front-end image to ECR
-        run: docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/inmobiliaria:latest
+      # =========================
+      # Tag Image
+      # =========================
+      - name: Tag Docker image
+        run: |
+          docker tag inmobiliaria-image \
+          ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/inmobiliaria:latest
+
+      # =========================
+      # Push Image
+      # =========================
+      - name: Push Docker image
+        run: |
+          docker push \
+          ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/inmobiliaria:latest

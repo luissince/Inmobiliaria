@@ -1,7 +1,0 @@
-services:
-  app:
-    image: front-end-react
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: front-end-react-app
