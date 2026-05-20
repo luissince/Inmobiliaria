@@ -11,6 +11,6 @@ COPY app/package.json app/package-lock.json ./
 RUN npm install --frozen-lockfile 
 
 # Copiar el resto de los archivos y construir el frontend
-COPY app/ ./
+COPY . .
 
 RUN npm run build
