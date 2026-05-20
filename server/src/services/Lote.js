@@ -572,6 +572,25 @@ class Lote {
             const time = currentTime();
 
             // =========================
+            // VALIDAR LOTE NUEVO SI ESTA LIBRE
+            // =========================
+
+            const loteNuevo = await conec.query(`
+            SELECT 
+                l.idLote,
+                l.estado
+            FROM 
+                lote AS l 
+            WHERE 
+                l.idLote = ?`, [
+                idLoteNuevo
+            ]);
+
+            if (loteNuevo[0].estado === 1) {      
+                throw new Error("El lote ya esta asignado a otra venta.");
+            } 
+
+            // =========================
             // EVENTO
             // =========================
 
