@@ -5,7 +5,7 @@ FROM node:18-alpine AS front-end
 WORKDIR /app
 
 # Copiar solo los archivos necesarios para instalar dependencias
-COPY app/package.json app/package-lock.json ./
+COPY package.json package-lock.json ./
 
 # Instalar dependencias de frontend
 RUN npm install --frozen-lockfile 
