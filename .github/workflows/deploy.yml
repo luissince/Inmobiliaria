@@ -18,7 +18,7 @@ jobs:
 
       - name: Crear archivo .env
         run: |
-          cat > apps/nestapi-service/.env <<EOL
+          cat > app/.env <<EOL
           VITE_APP_END_POINT="${{secrets.VITE_APP_END_POINT}}"
           VITE_APP_URL="${{secrets.VITE_APP_URL}}"
           VITE_APP_IMAGE="${{secrets.VITE_APP_IMAGE}}"
