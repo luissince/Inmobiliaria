@@ -1,0 +1,30 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ "master" ]
+
+jobs:
+
+  build-front-end:
+    name: Build Front-End (ReactJs)
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    environment: front-end
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v3
+
+      - name: Crear archivo .env
+        run: |
+          cat > apps/nestapi-service/.env <<EOL
+          VITE_APP_END_POINT="${{secrets.VITE_APP_END_POINT}}"
+          VITE_APP_URL="${{secrets.VITE_APP_URL}}"
+          VITE_APP_IMAGE="${{secrets.VITE_APP_IMAGE}}"
+          VITE_APP_ENV="${{secrets.VITE_APP_ENV}}"
+          VITE_APP_VERSION="${{secrets.VITE_APP_VERSION}}"
+          EOL
+
+      - name: Construyendo contenedor NestJs
+        run: docker compose -f app/docker-compose.build.yml build
