@@ -7,7 +7,7 @@ on:
 jobs:
 
   build-front-end:
-    name: Build Front-End (ReactJs)
+    name: Front-End (ReactJs)
     if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     environment: front-end
@@ -26,7 +26,7 @@ jobs:
           VITE_APP_VERSION="${{secrets.VITE_APP_VERSION}}"
           EOL
 
-      - name: Construyendo contenedor NestJs
+      - name: Build container App React
         run: docker compose -f app/docker-compose.build.yml build
 
       - name: Configure AWS credentials
@@ -39,8 +39,8 @@ jobs:
       - name: Login to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Tag back-end image
+      - name: Tag front-end image
         run: docker tag front-end-react ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/inmobiliaria:latest
 
-      - name: Push back-end image to ECR
+      - name: Push front-end image to ECR
         run: docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/inmobiliaria:latest
