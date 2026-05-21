@@ -138,15 +138,22 @@ jobs:
       - name: Delete old images from ECR
         run: |
           REPO="inmobiliaria"
+          TAG="latest"
 
-          aws ecr list-images --repository-name "$REPO" \
-            --query "imageIds[?type(imageTag)==null || imageTag!='${TAG}']" \
-            --output json > images.json
+          aws ecr list-images \
+          --repository-name "$REPO" \
+          --filter tagStatus=TAGGED \
+          --query "imageIds[?imageTag!='${KEEP_TAG}']" \
+          --output json > images.json
 
           COUNT=$(jq length images.json)
+
           if [ "$COUNT" -gt 0 ]; then
             echo "🗑️ Cleaning up $COUNT old images from $REPO..."
-            aws ecr batch-delete-image --repository-name "$REPO" --image-ids file://images.json
+            
+            aws ecr batch-delete-image \
+              --repository-name "$REPO" \
+              --image-ids file://images.json
           else
             echo "✅ There are no old images to delete from $REPO."
           fi
