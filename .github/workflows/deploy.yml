@@ -142,8 +142,7 @@ jobs:
 
           aws ecr list-images \
           --repository-name "$REPO" \
-          --filter tagStatus=TAGGED \
-          --query "imageIds[?imageTag!='${KEEP_TAG}']" \
+          --query "imageIds[?type(imageTag)==null || imageTag!='${TAG}']" \
           --output json > images.json
 
           COUNT=$(jq length images.json)
