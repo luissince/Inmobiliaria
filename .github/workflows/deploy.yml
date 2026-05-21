@@ -114,3 +114,39 @@ jobs:
 
       - name: Delete local images
         run: docker image prune -af || true
+
+  clean-ecr-images:
+    name: Clear up old images in ECR
+    runs-on: ubuntu-latest
+    needs: deploy-to-runs-on
+    
+    env:
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Install jq
+        run: sudo apt-get install -y jq
+
+      - name: Delete old images from ECR
+        run: |
+          REPO="inmobiliaria"
+
+          aws ecr list-images --repository-name "$REPO" \
+            --query "imageIds[?type(imageTag)==null || imageTag!='${TAG}']" \
+            --output json > images.json
+
+          COUNT=$(jq length images.json)
+          if [ "$COUNT" -gt 0 ]; then
+            echo "🗑️ Cleaning up $COUNT old images from $REPO..."
+            aws ecr batch-delete-image --repository-name "$REPO" --image-ids file://images.json
+          else
+            echo "✅ There are no old images to delete from $REPO."
+          fi
