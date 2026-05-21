@@ -1,12 +1,8 @@
 # Definición de servicios
 services:
   inmobiliaria-services:
-    # Configuración para construir la imagen del contenedor desde el contexto actual
-    build:
-      context: .
-      dockerfile: Dockerfile
-    # Nombre de la imagen de la imagen generada
-    image: inmobiliaria-image
+  # Configuración para construir la imagen del contenedor desde el contexto actual
+    image: ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/inmobiliaria:latest
     # Nombre del contenedor
     container_name: inmobiliaria
     # Configuración para reiniciar siempre el contenedor
@@ -14,9 +10,7 @@ services:
     # Configuración de redes
     networks:
       - luis
-    # Mapeo de puertos: Mapea el puerto 6001 del host al puerto 80 del contenedor
-    ports:
-      - 6502:80
+    # Volumen de almacenamiento
     volumes:
       - volume-path:/back-end/src/path
 
